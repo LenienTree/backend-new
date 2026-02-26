@@ -1,0 +1,276 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
+enum EventCategory {
+  Hackathon
+  Ideathon
+  Webinar
+  Conclave
+  Other
+}
+
+enum EventMode {
+  ONLINE
+  OFFLINE
+}
+
+enum EventStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum ApprovalMode {
+  AUTO
+  MANUAL
+}
+
+enum PrizeType {
+  NONE
+  CASH
+  MERCH
+  POINTS
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAYMENT_PENDING
+  ATTENDED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
+model User {
+  id              String     @id @default(uuid())
+  name            String
+  email           String     @unique
+  phone           String?
+  passwordHash    String?
+  role            Role       @default(USER)
+  isOrganizer     Boolean    @default(false)
+  college         String?
+  graduationYear  Int?
+  bio             String?
+  profileImage    String?
+  status          UserStatus @default(ACTIVE)
+  isEmailVerified Boolean    @default(false)
+  googleId        String?    @unique
+
+  // Relations
+  socialLinks   SocialLink?
+  skills        UserSkill[]
+  galleryImages GalleryImage[]
+  certificates  Certificate[]
+
+  organizedEvents  Event[]        @relation("OrganizerEvents")
+  registrations    Registration[]
+  bookmarks        Bookmark[]
+  announcements    Announcement[]
+  auditLogs        AuditLog[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([email])
+  @@index([status])
+}
+
+model SocialLink {
+  id        String @id @default(uuid())
+  userId    String @unique
+  linkedin  String?
+  github    String?
+  instagram String?
+  twitter   String?
+  website   String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserSkill {
+  id     String @id @default(uuid())
+  userId String
+  skill  String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skill])
+}
+
+model GalleryImage {
+  id        String   @id @default(uuid())
+  userId    String
+  imageUrl  String
+  caption   String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Event {
+  id                   String        @id @default(uuid())
+  title                String
+  subtitle             String?
+  category             EventCategory
+  theme                String?
+  organizerId          String
+  mode                 EventMode     @default(ONLINE)
+  venueName            String?
+  address              String?
+  mapLink              String?
+  startDate            DateTime
+  endDate              DateTime
+  registrationDeadline DateTime
+  bannerImage          String?
+  eventPoster          String?
+  description          String
+  prizeType            PrizeType     @default(NONE)
+  prizeAmount          Float?
+  maxParticipants      Int?
+  approvalMode         ApprovalMode  @default(AUTO)
+  status               EventStatus   @default(DRAFT)
+  isPaid               Boolean       @default(false)
+  ticketPrice          Float?
+  primaryColor         String?
+  secondaryColor       String?
+  accentColor          String?
+  customFormFields     Json?
+  rejectionReason      String?
+  isFeatured           Boolean       @default(false)
+
+  // Relations
+  organizer     User           @relation("OrganizerEvents", fields: [organizerId], references: [id])
+  registrations Registration[]
+  announcements Announcement[]
+  faqs          FAQ[]
+  bookmarks     Bookmark[]
+  certificates  Certificate[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([status])
+  @@index([category])
+  @@index([organizerId])
+  @@index([startDate])
+}
+
+model Registration {
+  id            String             @id @default(uuid())
+  eventId       String
+  userId        String
+  status        RegistrationStatus @default(PENDING)
+  paymentStatus PaymentStatus      @default(UNPAID)
+  formData      Json?
+  paymentRef    String?
+  registeredAt  DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([status])
+  @@index([eventId])
+  @@index([userId])
+}
+
+model Announcement {
+  id          String   @id @default(uuid())
+  eventId     String
+  title       String
+  content     String
+  publishDate DateTime @default(now())
+  createdBy   String
+
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  creator User  @relation(fields: [createdBy], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FAQ {
+  id       String @id @default(uuid())
+  eventId  String
+  question String
+  answer   String
+  order    Int    @default(0)
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Bookmark {
+  id        String   @id @default(uuid())
+  userId    String
+  eventId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+}
+
+model Certificate {
+  id             String   @id @default(uuid())
+  userId         String
+  eventId        String
+  certificateUrl String
+  issuedAt       DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String
+  entity     String
+  entityId   String?
+  oldValue   Json?
+  newValue   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entity, entityId])
+  @@index([userId])
+}
