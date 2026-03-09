@@ -169,6 +169,9 @@ export class EventService {
                     status: true,
                     isPaid: true,
                     ticketPrice: true,
+                    prizeType: true,
+                    prizeAmount: true,
+                    venueName: true,
                     maxParticipants: true,
                     isFeatured: true,
                     organizer: {
