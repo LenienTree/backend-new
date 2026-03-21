@@ -48,6 +48,7 @@ export class AuthService {
                 isOrganizer: true,
                 status: true,
                 isEmailVerified: true,
+                profileImage: true,
                 createdAt: true,
             },
         });
@@ -72,7 +73,7 @@ export class AuthService {
     }
 
     async login(email: string, password: string) {
-        const user = await prisma.user.findUnique({
+        const user = await prisma.user.findFirst({
             where: { email, deletedAt: null },
             select: {
                 id: true,
@@ -83,6 +84,7 @@ export class AuthService {
                 isOrganizer: true,
                 status: true,
                 isEmailVerified: true,
+                profileImage: true,
             },
         });
 
@@ -159,6 +161,7 @@ export class AuthService {
                 email: user.email,
                 role: user.role,
                 isOrganizer: user.isOrganizer,
+                profileImage: user.profileImage,
             },
             accessToken: generateAccessToken(payload),
             refreshToken: generateRefreshToken(payload),
