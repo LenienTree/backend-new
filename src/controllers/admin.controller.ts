@@ -3,6 +3,7 @@ import { adminService } from '../services/admin.service';
 import { userService } from '../services/user.service';
 import { sendSuccess } from '../utils/apiResponse';
 import { AuthRequest } from '../types';
+import { prisma } from '../config/database';
 
 export class AdminController {
     getDashboard = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -82,6 +83,21 @@ export class AdminController {
                 req.body.isFeatured
             );
             sendSuccess(res, event);
+        } catch (err) {
+            next(err);
+        }
+    };
+
+    approveOrganizer = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.params.id as string;
+            // Grant the organizer role
+            const user = await prisma.user.update({
+                where: { id: userId },
+                data: { isOrganizer: true },
+                select: { id: true, name: true, email: true, isOrganizer: true },
+            });
+            sendSuccess(res, user, 'Organizer approved successfully.');
         } catch (err) {
             next(err);
         }

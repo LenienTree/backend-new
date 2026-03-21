@@ -92,8 +92,8 @@ export class UserController {
 
     becomeOrganizer = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            const user = await userService.becomeOrganizer(req.user!.userId);
-            sendSuccess(res, user, 'You are now an organizer!');
+            const result = await userService.becomeOrganizer(req.user!.userId, req.body);
+            sendSuccess(res, result, 'Your organizer request has been submitted for review.');
         } catch (err) {
             next(err);
         }

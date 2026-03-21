@@ -174,12 +174,28 @@ export class UserService {
         await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
     }
 
-    async becomeOrganizer(userId: string) {
-        return prisma.user.update({
-            where: { id: userId },
-            data: { isOrganizer: true },
-            select: { id: true, isOrganizer: true },
+    async becomeOrganizer(userId: string, data: { orgName?: string; orgEmail?: string; eventName?: string }) {
+        // Check if a request already exists
+        const existing = await prisma.auditLog.findFirst({
+            where: { userId, action: 'ORGANIZER_REQUEST' },
+            orderBy: { createdAt: 'desc' },
         });
+        if (existing) {
+            throw new AppError('You already have a pending organizer request.', 409);
+        }
+
+        // Store the request for admin review — do NOT grant role yet
+        await prisma.auditLog.create({
+            data: {
+                userId,
+                action: 'ORGANIZER_REQUEST',
+                entity: 'User',
+                entityId: userId,
+                newValue: data as object,
+            },
+        });
+
+        return { requested: true };
     }
 
     async getMyEvents(userId: string, page = '1', limit = '10') {

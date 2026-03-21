@@ -49,6 +49,9 @@ router.put(
 // PUT /api/admin/users/:id/unblock
 router.put('/users/:id/unblock', adminController.unblockUser);
 
+// PUT /api/admin/users/:id/approve-organizer
+router.put('/users/:id/approve-organizer', auditLog('APPROVE_ORGANIZER', 'User'), adminController.approveOrganizer);
+
 // DELETE /api/admin/users/:id
 router.delete(
     '/users/:id',
