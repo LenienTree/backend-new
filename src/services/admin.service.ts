@@ -10,7 +10,6 @@ export class AdminService {
             pendingEvents,
             totalRegistrations,
             approvedRegistrations,
-            revenueResult,
             recentEvents,
             recentUsers,
         ] = await Promise.all([
@@ -19,10 +18,6 @@ export class AdminService {
             prisma.event.count({ where: { status: 'PENDING_APPROVAL' } }),
             prisma.registration.count(),
             prisma.registration.count({ where: { status: 'APPROVED' } }),
-            prisma.registration.aggregate({
-                where: { paymentStatus: 'PAID' },
-                _sum: { _all: true },
-            }),
             prisma.event.findMany({
                 where: { deletedAt: null },
                 orderBy: { createdAt: 'desc' },
@@ -148,6 +143,28 @@ export class AdminService {
         ]);
 
         return buildPaginatedResult(logs, total, p, l);
+    }
+
+    async getOrganizerRequests() {
+        // Only return ORGANIZER_REQUEST entries for users who are NOT yet organizers
+        const requests = await prisma.auditLog.findMany({
+            where: { action: 'ORGANIZER_REQUEST' },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        isOrganizer: true,
+                        profileImage: true,
+                    },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        // Filter out already-approved users
+        return requests.filter(r => !r.user?.isOrganizer);
     }
 
     async toggleFeaturedEvent(eventId: string, isFeatured: boolean) {

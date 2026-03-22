@@ -59,6 +59,9 @@ router.delete(
     adminController.deleteUser
 );
 
+// GET /api/admin/organizer-requests
+router.get('/organizer-requests', adminController.getOrganizerRequests);
+
 // GET /api/admin/audit-logs
 router.get('/audit-logs', adminController.getAuditLogs);
 

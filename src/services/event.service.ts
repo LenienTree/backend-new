@@ -166,6 +166,7 @@ export class EventService {
                     startDate: true,
                     endDate: true,
                     bannerImage: true,
+                    eventPoster: true,
                     status: true,
                     isPaid: true,
                     ticketPrice: true,

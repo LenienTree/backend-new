@@ -175,7 +175,16 @@ export class UserService {
     }
 
     async becomeOrganizer(userId: string, data: { orgName?: string; orgEmail?: string; eventName?: string }) {
-        // Check if a request already exists
+        // Check if user is already an organizer
+        const userRecord = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { isOrganizer: true },
+        });
+        if (userRecord?.isOrganizer) {
+            throw new AppError('You are already an organizer.', 409);
+        }
+
+        // Check if a pending request already exists
         const existing = await prisma.auditLog.findFirst({
             where: { userId, action: 'ORGANIZER_REQUEST' },
             orderBy: { createdAt: 'desc' },

@@ -76,6 +76,15 @@ export class AdminController {
         }
     };
 
+    getOrganizerRequests = async (req: AuthRequest, res: Response, next: NextFunction) => {
+        try {
+            const requests = await adminService.getOrganizerRequests();
+            sendSuccess(res, requests);
+        } catch (err) {
+            next(err);
+        }
+    };
+
     toggleFeatured = async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             const event = await adminService.toggleFeaturedEvent(
