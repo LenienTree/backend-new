@@ -5,6 +5,7 @@ import eventRoutes from './event.routes';
 import adminRoutes from './admin.routes';
 import bookmarkRoutes from './bookmark.routes';
 import organizerRoutes from './organizer.routes';
+import healthRoutes from './health.routes';
 
 const router = Router();
 
@@ -14,15 +15,6 @@ router.use('/events', eventRoutes);
 router.use('/admin', adminRoutes);
 router.use('/bookmarks', bookmarkRoutes);
 router.use('/organizer', organizerRoutes);
-
-// Health check
-router.get('/health', (_req, res) => {
-    res.json({
-        success: true,
-        message: 'LenientTree API is running',
-        timestamp: new Date().toISOString(),
-        version: '1.0.0',
-    });
-});
+router.use('/health', healthRoutes);
 
 export default router;
