@@ -25,7 +25,7 @@ export const errorHandler = (
         res.status(422).json({
             success: false,
             message: 'Validation failed',
-            errors: err.errors.map((e) => ({
+            errors: err.issues.map((e: import('zod').ZodIssue) => ({
                 field: e.path.join('.'),
                 message: e.message,
             })),
