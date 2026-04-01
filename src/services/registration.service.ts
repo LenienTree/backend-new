@@ -46,6 +46,11 @@ export class RegistrationService {
             status = 'APPROVED';
         }
 
+        type RegistrationWithRelations = Awaited<ReturnType<typeof prisma.registration.create>> & {
+            user: { name: string; email: string };
+            event: { title: string };
+        };
+
         const registration = await prisma.registration.create({
             data: {
                 eventId,
@@ -58,7 +63,7 @@ export class RegistrationService {
                 event: { select: { title: true } },
                 user: { select: { name: true, email: true } },
             },
-        });
+        }) as RegistrationWithRelations;
 
         if (status === 'APPROVED') {
             sendEmail({

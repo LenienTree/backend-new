@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const registerEventSchema = z.object({
-    formData: z.record(z.unknown()).optional(),
+    formData: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const announcementSchema = z.object({
