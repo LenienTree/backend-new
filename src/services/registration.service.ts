@@ -1,4 +1,5 @@
 import { prisma } from '../config/database';
+import { Prisma } from '@prisma/client';
 import { AppError } from '../utils/apiResponse';
 import { getPagination, buildPaginatedResult } from '../utils/helpers';
 import { sendEmail, emailTemplates } from '../utils/email';
@@ -51,7 +52,7 @@ export class RegistrationService {
                 userId,
                 status,
                 paymentStatus,
-                formData: formData as Record<string, unknown>,
+                formData: (formData ?? Prisma.JsonNull) as Prisma.InputJsonValue,
             },
             include: {
                 event: { select: { title: true } },
