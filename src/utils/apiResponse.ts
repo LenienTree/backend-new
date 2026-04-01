@@ -35,7 +35,7 @@ export const sendError = (
     return res.status(statusCode).json({
         success: false,
         message,
-        ...(errors && { errors }),
+        ...(errors !== undefined && errors !== null ? { errors: errors as object } : {}),
     });
 };
 
