@@ -19,7 +19,15 @@ app.use(helmet());
 
 app.use(
     cors({
-        origin: [config.clientUrl, 'http://localhost:3000', 'http://localhost:5173'],
+        origin: [
+            config.clientUrl,
+            'https://lenienttree.com',
+            'https://www.lenienttree.com',
+            'https://lenienttree.in',
+            'https://www.lenienttree.in',
+            'http://localhost:3000',
+            'http://localhost:5173',
+        ],
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
         allowedHeaders: [
