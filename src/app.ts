@@ -15,19 +15,33 @@ const app: Application = express();
 app.set('trust proxy', 1);
 
 // ── Security ──────────────────────────────────────────────────────────────────
-app.use(helmet());
+// COOP must be 'same-origin-allow-popups' so Google OAuth popup can postMessage back
+app.use(
+    helmet({
+        crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+    })
+);
+
+const allowedOrigins = [
+    config.clientUrl,
+    'https://lenienttree.com',
+    'https://www.lenienttree.com',
+    'https://lenienttree.in',
+    'https://www.lenienttree.in',
+    'http://localhost:3000',
+    'http://localhost:5173',
+];
 
 app.use(
     cors({
-        origin: [
-            config.clientUrl,
-            'https://lenienttree.com',
-            'https://www.lenienttree.com',
-            'https://lenienttree.in',
-            'https://www.lenienttree.in',
-            'http://localhost:3000',
-            'http://localhost:5173',
-        ],
+        origin: (origin, callback) => {
+            // Allow requests with no origin (e.g. mobile apps, curl, Postman)
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error(`CORS: origin '${origin}' is not allowed`));
+            }
+        },
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
         allowedHeaders: [
@@ -40,6 +54,9 @@ app.use(
         exposedHeaders: ['Content-Range', 'X-Content-Range'],
     })
 );
+
+// Explicitly handle preflight for all routes
+app.options('*', cors());
 
 // ── Rate Limiting ─────────────────────────────────────────────────────────────
 const limiter = rateLimit({
