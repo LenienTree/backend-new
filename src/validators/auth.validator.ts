@@ -6,8 +6,10 @@ export const registerSchema = z.object({
     password: z
         .string()
         .min(8, 'Password must be at least 8 characters')
+        .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
         .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-        .regex(/[0-9]/, 'Password must contain at least one number'),
+        .regex(/[0-9]/, 'Password must contain at least one number')
+        .regex(/[^a-zA-Z0-9]/, 'Password must contain at least one special character'),
     phone: z.string().optional(),
     college: z.string().optional(),
     graduationYear: z.number().int().min(2000).max(2035).optional(),
@@ -31,8 +33,10 @@ export const resetPasswordSchema = z.object({
     password: z
         .string()
         .min(8, 'Password must be at least 8 characters')
-        .regex(/[A-Z]/, 'Must contain uppercase letter')
-        .regex(/[0-9]/, 'Must contain a number'),
+        .regex(/[a-z]/, 'Must contain a lowercase letter')
+        .regex(/[A-Z]/, 'Must contain an uppercase letter')
+        .regex(/[0-9]/, 'Must contain a number')
+        .regex(/[^a-zA-Z0-9]/, 'Must contain a special character'),
 });
 
 export const changePasswordSchema = z
@@ -41,8 +45,10 @@ export const changePasswordSchema = z
         newPassword: z
             .string()
             .min(8, 'Password must be at least 8 characters')
-            .regex(/[A-Z]/, 'Must contain uppercase letter')
-            .regex(/[0-9]/, 'Must contain a number'),
+            .regex(/[a-z]/, 'Must contain a lowercase letter')
+            .regex(/[A-Z]/, 'Must contain an uppercase letter')
+            .regex(/[0-9]/, 'Must contain a number')
+            .regex(/[^a-zA-Z0-9]/, 'Must contain a special character'),
         confirmPassword: z.string(),
     })
     .refine((data) => data.newPassword === data.confirmPassword, {

@@ -20,8 +20,11 @@ export class AuthService {
         college?: string;
         graduationYear?: number;
     }) {
-        const existing = await prisma.user.findUnique({
-            where: { email: data.email },
+        const existing = await prisma.user.findFirst({
+            where: {
+                email: data.email,
+                deletedAt: null,
+            },
         });
 
         if (existing) {
