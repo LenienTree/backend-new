@@ -14,8 +14,11 @@ export default async function userRoutes(fastify: FastifyInstance) {
     // GET /api/users/:id
     fastify.get('/:id', userController.getUserById);
 
-    // PATCH /api/users/profile
+    // PATCH /api/users/profile (deprecated, should use PUT /me)
     fastify.patch('/profile', { preHandler: validate(updateProfileSchema) }, userController.updateProfile);
+
+    // PUT /api/users/me
+    fastify.put('/me', { preHandler: validate(updateProfileSchema) }, userController.updateProfile);
 
     // POST /api/users/profile-image
     fastify.post('/profile-image', userController.uploadProfileImage);
@@ -29,8 +32,8 @@ export default async function userRoutes(fastify: FastifyInstance) {
     // POST /api/users/change-password
     fastify.post('/change-password', { preHandler: validate(changePasswordSchema) }, userController.changePassword);
 
-    // POST /api/users/become-organizer
-    fastify.post('me/become-organizer', { preHandler: validate(becomeOrganizerSchema) }, userController.becomeOrganizer);
+    // POST /api/users/me/become-organizer
+    fastify.post('/me/become-organizer', { preHandler: validate(becomeOrganizerSchema) }, userController.becomeOrganizer);
 
     // GET /api/users/my-events
     fastify.get('/my-events', userController.getMyEvents);
