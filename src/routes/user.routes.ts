@@ -30,7 +30,7 @@ export default async function userRoutes(fastify: FastifyInstance) {
     fastify.post('/change-password', { preHandler: validate(changePasswordSchema) }, userController.changePassword);
 
     // POST /api/users/become-organizer
-    fastify.post('/become-organizer', { preHandler: validate(becomeOrganizerSchema) }, userController.becomeOrganizer);
+    fastify.post('me/become-organizer', { preHandler: validate(becomeOrganizerSchema) }, userController.becomeOrganizer);
 
     // GET /api/users/my-events
     fastify.get('/my-events', userController.getMyEvents);
