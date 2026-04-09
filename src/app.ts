@@ -68,8 +68,8 @@ app.register(multipart, {
     },
 });
 
-// Response Compression — requested for speed
-app.register(compress, { global: true });
+// Response Compression disabled temporarily
+// app.register(compress, { global: true });
 
 // Rate Limiting
 app.register(rateLimit, {
