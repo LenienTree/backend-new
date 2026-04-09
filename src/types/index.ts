@@ -1,24 +1,6 @@
-import { Request } from 'express';
+import { FastifyRequest } from 'fastify';
 
 export type Role = 'ADMIN' | 'USER';
-
-declare global {
-    namespace Express {
-        namespace Multer {
-            interface File {
-                fieldname: string;
-                originalname: string;
-                encoding: string;
-                mimetype: string;
-                size: number;
-                destination: string;
-                filename: string;
-                path: string;
-                buffer: Buffer;
-            }
-        }
-    }
-}
 
 export interface JwtPayload {
     userId: string;
@@ -27,11 +9,10 @@ export interface JwtPayload {
     isOrganizer: boolean;
 }
 
-export interface AuthRequest extends Request {
+export interface AuthRequest extends FastifyRequest {
     user?: JwtPayload;
-    file?: Express.Multer.File;
-    files?: Express.Multer.File[] | { [fieldname: string]: Express.Multer.File[] };
 }
+
 
 export interface PaginationQuery {
     page?: string;

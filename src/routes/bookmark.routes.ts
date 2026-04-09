@@ -1,25 +1,20 @@
-import { Router } from 'express';
-import {
-    bookmarkController,
-    certificateController,
-    organizerController,
-} from '../controllers/organizer.controller';
-import { authenticate, requireOrganizer } from '../middleware/auth.middleware';
-import { validate } from '../middleware/validate.middleware';
-import { issueCertificateSchema } from '../validators/user.validator';
+import { FastifyInstance } from 'fastify';
+import { bookmarkController } from '../controllers/organizer.controller';
+import { authenticate } from '../middleware/auth.middleware';
 
-const router = Router();
+export default async function bookmarkRoutes(fastify: FastifyInstance) {
+    // ── Bookmarks ─────────────────────────────────────────────────────────────────
 
-// ── Bookmarks ─────────────────────────────────────────────────────────────────
+    // POST /api/bookmarks/:id/toggle
+    fastify.post('/:id/toggle', {
+        preHandler: authenticate,
+        handler: bookmarkController.toggle
+    });
 
-// POST /api/bookmarks/:id/toggle
-router.post(
-    '/:id/toggle',
-    authenticate,
-    bookmarkController.toggle
-);
+    // GET /api/bookmarks
+    fastify.get('/', {
+        preHandler: authenticate,
+        handler: bookmarkController.getBookmarks
+    });
+}
 
-// GET /api/bookmarks
-router.get('/', authenticate, bookmarkController.getBookmarks);
-
-export default router;

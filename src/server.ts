@@ -9,26 +9,24 @@ const startServer = async () => {
         await prisma.$connect();
         console.log('✅ Database connected successfully');
 
-        const server = app.listen(config.port, () => {
-            console.log(`
+        const address = await app.listen({ port: config.port, host: '0.0.0.0' });
+        console.log(`
 ╔═══════════════════════════════════════════╗
 ║       🌳  LenientTree API Server          ║
 ╠═══════════════════════════════════════════╣
 ║  Mode     : ${config.env.padEnd(30)}║
 ║  Port     : ${String(config.port).padEnd(30)}║
-║  URL      : http://localhost:${String(config.port).padEnd(14)}║
+║  URL      : ${address.padEnd(31)}║
 ╚═══════════════════════════════════════════╝
       `);
-        });
 
         // Graceful shutdown
         const shutdown = async (signal: string) => {
             console.log(`\n🛑 Received ${signal}. Shutting down gracefully...`);
-            server.close(async () => {
-                await prisma.$disconnect();
-                console.log('✅ Database disconnected. Server closed.');
-                process.exit(0);
-            });
+            await app.close();
+            await prisma.$disconnect();
+            console.log('✅ Database disconnected. Server closed.');
+            process.exit(0);
         };
 
         process.on('SIGTERM', () => shutdown('SIGTERM'));

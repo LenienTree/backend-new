@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { FastifyInstance } from 'fastify';
 import {
     certificateController,
     organizerController,
@@ -7,26 +7,23 @@ import { authenticate, requireOrganizer } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate.middleware';
 import { issueCertificateSchema } from '../validators/user.validator';
 
-const router = Router();
+export default async function organizerRoutes(fastify: FastifyInstance) {
+    // GET /api/organizer/dashboard
+    fastify.get('/dashboard', {
+        preHandler: [authenticate, requireOrganizer],
+        handler: organizerController.getDashboard
+    });
 
-// GET /api/organizer/dashboard
-router.get(
-    '/dashboard',
-    authenticate,
-    requireOrganizer,
-    organizerController.getDashboard
-);
+    // POST /api/organizer/certificates/issue
+    fastify.post('/certificates/issue', {
+        preHandler: [authenticate, requireOrganizer, validate(issueCertificateSchema)],
+        handler: certificateController.issue
+    });
 
-// POST /api/organizer/certificates/issue
-router.post(
-    '/certificates/issue',
-    authenticate,
-    requireOrganizer,
-    validate(issueCertificateSchema),
-    certificateController.issue
-);
+    // GET /api/organizer/certificates (own user's certs)
+    fastify.get('/certificates', {
+        preHandler: authenticate,
+        handler: certificateController.getByUser
+    });
+}
 
-// GET /api/organizer/certificates (own user's certs)
-router.get('/certificates', authenticate, certificateController.getByUser);
-
-export default router;

@@ -1,27 +1,39 @@
-import express, { Application } from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import rateLimit from 'express-rate-limit';
-import cookieParser from 'cookie-parser';
-import 'express-async-errors';
+import fastify, { FastifyInstance } from 'fastify';
+import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import cookie from '@fastify/cookie';
+import compress from '@fastify/compress';
+import rateLimit from '@fastify/rate-limit';
+import formbody from '@fastify/formbody';
+import multipart from '@fastify/multipart';
 import { config } from './config/config';
 import routes from './routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
 
-const app: Application = express();
+const app: FastifyInstance = fastify({
+    logger: config.env !== 'test' ? {
+        level: config.env === 'production' ? 'info' : 'debug',
+        transport: config.env !== 'production' ? {
+            target: 'pino-pretty',
+            options: {
+                colorize: true,
+                translateTime: 'HH:MM:ss Z',
+                ignore: 'pid,hostname',
+            },
+        } : undefined,
+    } : false,
+    // Schema-based serialization is enabled by default in Fastify
+    // but we ensure it's prioritized
+    ajv: {
+        customOptions: {
+            removeAdditional: 'all',
+            coerceTypes: true,
+            useDefaults: true,
+        },
+    },
+});
 
-// Trust proxy is required for express-rate-limit to work correctly behind a load balancer/reverse proxy
-app.set('trust proxy', 1);
-
-// ── Security ──────────────────────────────────────────────────────────────────
-// COOP must be 'same-origin-allow-popups' so Google OAuth popup can postMessage back
-app.use(
-    helmet({
-        crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
-    })
-);
-
+// ── Plugins & Middleware ──────────────────────────────────────────────────────
 const allowedOrigins = [
     config.clientUrl,
     'https://lenienttree.com',
@@ -32,74 +44,45 @@ const allowedOrigins = [
     'http://localhost:5173',
 ];
 
-app.use(
-    cors({
-        origin: (origin, callback) => {
-            // Allow requests with no origin (e.g. mobile apps, curl, Postman)
-            if (!origin || allowedOrigins.includes(origin)) {
-                callback(null, true);
-            } else {
-                callback(new Error(`CORS: origin '${origin}' is not allowed`));
-            }
-        },
-        credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: [
-            'Content-Type',
-            'Authorization',
-            'X-Requested-With',
-            'Accept',
-            'Origin',
-        ],
-        exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    })
-);
+app.register(cors, {
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error(`CORS: origin '${origin}' is not allowed`), false);
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+});
 
-// Explicitly handle preflight for all routes
-app.options('*', cors());
+app.register(helmet, {
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+});
 
-// ── Rate Limiting ─────────────────────────────────────────────────────────────
-const limiter = rateLimit({
-    windowMs: config.rateLimit.windowMs,
+app.register(cookie);
+app.register(formbody);
+app.register(multipart, {
+    limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB
+    },
+});
+
+// Response Compression — requested for speed
+app.register(compress, { global: true });
+
+// Rate Limiting
+app.register(rateLimit, {
     max: config.rateLimit.max,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: {
-        success: false,
-        message: 'Too many requests. Please try again later.',
-    },
+    timeWindow: config.rateLimit.windowMs,
 });
-
-// Stricter limiter for auth routes
-const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 50,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: {
-        success: false,
-        message: 'Too many authentication attempts. Please try again in 15 minutes.',
-    },
-});
-
-app.use('/api', limiter);
-app.use('/api/auth', authLimiter);
-
-// ── Parsing ───────────────────────────────────────────────────────────────────
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(cookieParser());
-
-// ── Logging ───────────────────────────────────────────────────────────────────
-if (config.env !== 'test') {
-    app.use(morgan(config.env === 'production' ? 'combined' : 'dev'));
-}
 
 // ── Routes ────────────────────────────────────────────────────────────────────
-app.use('/api', routes);
+// We prefix all routes with /api as per existing structure
+app.register(routes, { prefix: '/api' });
 
 // ── Error Handling ────────────────────────────────────────────────────────────
-app.use(notFound);
-app.use(errorHandler);
+app.setNotFoundHandler(notFound);
+app.setErrorHandler(errorHandler);
 
 export default app;

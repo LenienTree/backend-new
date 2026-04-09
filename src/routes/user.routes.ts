@@ -1,43 +1,40 @@
-import { Router } from 'express';
+import { FastifyInstance } from 'fastify';
 import { userController } from '../controllers/user.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate.middleware';
-import { uploadSingle } from '../middleware/upload.middleware';
-import { updateProfileSchema, changePasswordSchema } from '../validators/user.validator';
+import { updateProfileSchema, changePasswordSchema, becomeOrganizerSchema } from '../validators/user.validator';
 
-const router = Router();
+export default async function userRoutes(fastify: FastifyInstance) {
+    // All user routes require authentication
+    fastify.addHook('preHandler', authenticate);
 
-// All user routes require authentication
-router.use(authenticate);
+    // GET /api/users/me
+    fastify.get('/me', userController.getMe);
 
-// GET /api/users/me
-router.get('/me', userController.getMe);
+    // GET /api/users/:id
+    fastify.get('/:id', userController.getUserById);
 
-// PUT /api/users/me
-router.put('/me', validate(updateProfileSchema), userController.updateProfile);
+    // PATCH /api/users/profile
+    fastify.patch('/profile', { preHandler: validate(updateProfileSchema) }, userController.updateProfile);
 
-// GET /api/users/me/events
-router.get('/me/events', userController.getMyEvents);
+    // POST /api/users/profile-image
+    fastify.post('/profile-image', userController.uploadProfileImage);
 
-// GET /api/users/me/certificates
-router.get('/me/certificates', userController.getCertificates);
+    // POST /api/users/gallery
+    fastify.post('/gallery', userController.addGalleryImage);
 
-// POST /api/users/me/avatar
-router.post('/me/avatar', uploadSingle('avatar'), userController.uploadProfileImage);
+    // DELETE /api/users/gallery/:imageId
+    fastify.delete('/gallery/:imageId', userController.deleteGalleryImage);
 
-// POST /api/users/me/gallery
-router.post('/me/gallery', uploadSingle('image'), userController.addGalleryImage);
+    // POST /api/users/change-password
+    fastify.post('/change-password', { preHandler: validate(changePasswordSchema) }, userController.changePassword);
 
-// DELETE /api/users/me/gallery/:imageId
-router.delete('/me/gallery/:imageId', userController.deleteGalleryImage);
+    // POST /api/users/become-organizer
+    fastify.post('/become-organizer', { preHandler: validate(becomeOrganizerSchema) }, userController.becomeOrganizer);
 
-// PUT /api/users/me/password
-router.put('/me/password', validate(changePasswordSchema), userController.changePassword);
+    // GET /api/users/my-events
+    fastify.get('/my-events', userController.getMyEvents);
 
-// POST /api/users/me/become-organizer
-router.post('/me/become-organizer', userController.becomeOrganizer);
-
-// GET /api/users/:id  (public profile)
-router.get('/:id', userController.getUserById);
-
-export default router;
+    // GET /api/users/certificates
+    fastify.get('/certificates', userController.getCertificates);
+}

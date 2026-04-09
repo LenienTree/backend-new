@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 import { ApiResponse } from '../types';
 
 export class AppError extends Error {
@@ -14,12 +14,12 @@ export class AppError extends Error {
 }
 
 export const sendSuccess = <T>(
-    res: Response,
+    reply: FastifyReply,
     data: T,
     message = 'Success',
     statusCode = 200
-): Response<ApiResponse<T>> => {
-    return res.status(statusCode).json({
+) => {
+    return reply.status(statusCode).send({
         success: true,
         message,
         data,
@@ -27,12 +27,12 @@ export const sendSuccess = <T>(
 };
 
 export const sendError = (
-    res: Response,
+    reply: FastifyReply,
     message: string,
     statusCode = 400,
     errors?: unknown
-): Response<ApiResponse> => {
-    return res.status(statusCode).json({
+) => {
+    return reply.status(statusCode).send({
         success: false,
         message,
         ...(errors !== undefined && errors !== null ? { errors: errors as object } : {}),
@@ -40,9 +40,10 @@ export const sendError = (
 };
 
 export const sendCreated = <T>(
-    res: Response,
+    reply: FastifyReply,
     data: T,
     message = 'Created successfully'
-): Response<ApiResponse<T>> => {
-    return sendSuccess(res, data, message, 201);
+) => {
+    return sendSuccess(reply, data, message, 201);
 };
+

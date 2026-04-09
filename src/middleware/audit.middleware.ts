@@ -1,33 +1,27 @@
-import { Request, Response, NextFunction } from 'express';
+import { FastifyReply } from 'fastify';
 import { prisma } from '../config/database';
 import { AuthRequest } from '../types';
 
 export const auditLog = (action: string, entity: string) => {
-    return async (req: AuthRequest, _res: Response, next: NextFunction) => {
-        // Attach audit logging to response finish event
-        _res.on('finish', async () => {
-            if (_res.statusCode < 400) {
+    return async (request: AuthRequest, reply: FastifyReply) => {
+        reply.raw.on('finish', async () => {
+            if (reply.statusCode < 400) {
                 try {
                     await prisma.auditLog.create({
                         data: {
-                            userId: req.user?.userId,
+                            userId: request.user?.userId,
                             action,
                             entity,
-                            entityId: req.params?.id as string,
-                            ipAddress:
-                                (req.headers['x-forwarded-for'] as string) ||
-                                req.socket.remoteAddress ||
-                                'unknown',
-                            userAgent: req.headers['user-agent'] || 'unknown',
+                            entityId: (request.params as any)?.id as string,
+                            ipAddress: request.ip || 'unknown',
+                            userAgent: request.headers['user-agent'] || 'unknown',
                         },
                     });
-                } catch {
-                    // Don't break the request if audit logging fails
-                    console.error('[AUDIT LOG] Failed to write audit log');
+                } catch (err) {
+                    request.log.error({ err }, '[AUDIT LOG] Failed to write audit log');
                 }
             }
         });
-
-        next();
     };
 };
+

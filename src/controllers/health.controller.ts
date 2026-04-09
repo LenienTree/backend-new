@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { HeadBucketCommand } from '@aws-sdk/client-s3';
 import { prisma } from '../config/database';
 import s3Client from '../config/s3';
@@ -104,7 +104,7 @@ function getSystemMetrics() {
 }
 
 // ── GET /api/health ────────────────────────────────────────────────────────────
-export const getHealth = async (_req: Request, res: Response): Promise<void> => {
+export const getHealth = async (_request: FastifyRequest, reply: FastifyReply): Promise<void> => {
     const [database, s3] = await Promise.all([checkDatabase(), checkS3()]);
 
     const configStatus = checkConfig();
@@ -131,16 +131,16 @@ export const getHealth = async (_req: Request, res: Response): Promise<void> => 
 
     // 200 for healthy/degraded, 503 for unhealthy
     const httpStatus = overallStatus === 'unhealthy' ? 503 : 200;
-    res.status(httpStatus).json({ success: overallStatus !== 'unhealthy', ...payload });
+    reply.status(httpStatus).send({ success: overallStatus !== 'unhealthy', ...payload });
 };
 
 // ── GET /api/health/ping ───────────────────────────────────────────────────────
-// Lightweight liveness probe — no external calls, safe for load-balancer checks
-export const ping = (_req: Request, res: Response): void => {
-    res.status(200).json({
+export const ping = (_request: FastifyRequest, reply: FastifyReply): void => {
+    reply.status(200).send({
         success: true,
         message: 'pong',
         timestamp: new Date().toISOString(),
         uptimeSeconds: Math.floor((Date.now() - startTime) / 1000),
     });
 };
+

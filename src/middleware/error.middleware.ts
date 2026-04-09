@@ -1,19 +1,18 @@
-import { Request, Response, NextFunction } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { AppError } from '../utils/apiResponse';
 import { Prisma } from '@prisma/client';
 import { ZodError } from 'zod';
 
 export const errorHandler = (
-    err: unknown,
-    req: Request,
-    res: Response,
-    _next: NextFunction
+    err: any,
+    request: FastifyRequest,
+    reply: FastifyReply
 ): void => {
-    console.error(`[ERROR] ${req.method} ${req.path}`, err);
+    request.log.error(err);
 
-    // Operational errors (trusted, our own)
+    // Operational errors
     if (err instanceof AppError) {
-        res.status(err.statusCode).json({
+        reply.status(err.statusCode).send({
             success: false,
             message: err.message,
         });
@@ -22,10 +21,10 @@ export const errorHandler = (
 
     // Zod validation errors
     if (err instanceof ZodError) {
-        res.status(422).json({
+        reply.status(422).send({
             success: false,
             message: 'Validation failed',
-            errors: err.issues.map((e: import('zod').ZodIssue) => ({
+            errors: err.issues.map((e) => ({
                 field: e.path.join('.'),
                 message: e.message,
             })),
@@ -38,20 +37,20 @@ export const errorHandler = (
         switch (err.code) {
             case 'P2002': {
                 const fields = (err.meta?.target as string[])?.join(', ') || 'field';
-                res.status(409).json({
+                reply.status(409).send({
                     success: false,
                     message: `A record with this ${fields} already exists.`,
                 });
                 return;
             }
             case 'P2025':
-                res.status(404).json({
+                reply.status(404).send({
                     success: false,
                     message: 'Record not found.',
                 });
                 return;
             case 'P2003':
-                res.status(400).json({
+                reply.status(400).send({
                     success: false,
                     message: 'Related record not found.',
                 });
@@ -62,38 +61,38 @@ export const errorHandler = (
     }
 
     if (err instanceof Prisma.PrismaClientValidationError) {
-        res.status(400).json({
+        reply.status(400).send({
             success: false,
             message: 'Invalid data provided.',
         });
         return;
     }
 
-    // JWT errors
+    // JWT/Other Error instances
     if (err instanceof Error) {
         if (err.name === 'JsonWebTokenError') {
-            res.status(401).json({ success: false, message: 'Invalid token.' });
+            reply.status(401).send({ success: false, message: 'Invalid token.' });
             return;
         }
         if (err.name === 'TokenExpiredError') {
-            res.status(401).json({ success: false, message: 'Token expired.' });
+            reply.status(401).send({ success: false, message: 'Token expired.' });
             return;
         }
     }
 
-    // Unknown errors — don't expose internals
-    res.status(500).json({
+    // Unknown errors
+    const isProd = process.env.NODE_ENV === 'production';
+    reply.status(500).send({
         success: false,
-        message:
-            process.env.NODE_ENV === 'production'
-                ? 'Something went wrong. Please try again later.'
-                : (err instanceof Error ? err.message : 'Internal server error'),
+        message: isProd
+            ? 'Something went wrong. Please try again later.'
+            : (err instanceof Error ? err.message : 'Internal server error'),
     });
 };
 
-export const notFound = (req: Request, res: Response): void => {
-    res.status(404).json({
+export const notFound = (request: FastifyRequest, reply: FastifyReply): void => {
+    reply.status(404).send({
         success: false,
-        message: `Route ${req.method} ${req.originalUrl} not found.`,
+        message: `Route ${request.method} ${request.url} not found.`,
     });
 };

@@ -1,10 +1,9 @@
-import { Router } from 'express';
+import { FastifyInstance } from 'fastify';
 import { eventController } from '../controllers/event.controller';
 import { registrationController } from '../controllers/registration.controller';
 import { announcementController, faqController } from '../controllers/announcement.controller';
 import { authenticate, requireOrganizer, optionalAuth } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate.middleware';
-import { uploadSingle } from '../middleware/upload.middleware';
 import { auditLog } from '../middleware/audit.middleware';
 import {
     createEventStep1Schema,
@@ -16,173 +15,151 @@ import {
     registerEventSchema,
     announcementSchema,
     faqSchema,
-    adminApproveEventSchema,
-    adminRejectEventSchema,
 } from '../validators/registration.validator';
 
-const router = Router();
+export default async function eventRoutes(fastify: FastifyInstance) {
+    // ── Public / Optional Auth ────────────────────────────────────────────────────
 
-// ── Public / Optional Auth ────────────────────────────────────────────────────
+    // GET /api/events  (public, filters)
+    fastify.get('/', {
+        preHandler: [optionalAuth, validate(eventFiltersSchema, 'query')],
+        handler: eventController.getEvents
+    });
 
-// GET /api/events  (public, filters)
-router.get('/', optionalAuth, validate(eventFiltersSchema, 'query'), eventController.getEvents);
+    // GET /api/events/:id  (public)
+    fastify.get('/:id', {
+        preHandler: optionalAuth,
+        handler: eventController.getEventById
+    });
 
-// GET /api/events/:id  (public)
-router.get('/:id', optionalAuth, eventController.getEventById);
+    // GET /api/events/:id/announcements
+    fastify.get('/:id/announcements', announcementController.getByEvent);
 
-// GET /api/events/:id/announcements
-router.get('/:id/announcements', announcementController.getByEvent);
+    // GET /api/events/:id/faqs
+    fastify.get('/:id/faqs', faqController.getByEvent);
 
-// GET /api/events/:id/faqs
-router.get('/:id/faqs', faqController.getByEvent);
+    // ── Authenticated ─────────────────────────────────────────────────────────────
 
-// ── Authenticated ─────────────────────────────────────────────────────────────
+    // GET /api/events/:id/registration-status
+    fastify.get('/:id/registration-status', {
+        preHandler: authenticate,
+        handler: registrationController.checkStatus
+    });
 
-// GET /api/events/:id/registration-status
-router.get(
-    '/:id/registration-status',
-    authenticate,
-    registrationController.checkStatus
-);
+    // POST /api/events/:id/register
+    fastify.post('/:id/register', {
+        preHandler: [authenticate, validate(registerEventSchema), auditLog('REGISTER', 'Registration')],
+        handler: registrationController.register
+    });
 
-// POST /api/events/:id/register
-router.post(
-    '/:id/register',
-    authenticate,
-    validate(registerEventSchema),
-    auditLog('REGISTER', 'Registration'),
-    registrationController.register
-);
+    // GET /api/events/:id/participants  (organizer/admin)
+    fastify.get('/:id/participants', {
+        preHandler: authenticate,
+        handler: registrationController.getParticipants
+    });
 
-// GET /api/events/:id/participants  (organizer/admin)
-router.get(
-    '/:id/participants',
-    authenticate,
-    registrationController.getParticipants
-);
+    // ── Organizer CRUD ────────────────────────────────────────────────────────────
 
-// ── Organizer CRUD ────────────────────────────────────────────────────────────
+    // POST /api/events  (Step 1 - create draft)
+    fastify.post('/', {
+        preHandler: [authenticate, requireOrganizer, validate(createEventStep1Schema), auditLog('CREATE', 'Event')],
+        handler: eventController.createDraft
+    });
 
-// POST /api/events  (Step 1 - create draft)
-router.post(
-    '/',
-    authenticate,
-    requireOrganizer,
-    validate(createEventStep1Schema),
-    auditLog('CREATE', 'Event'),
-    eventController.createDraft
-);
+    // PUT /api/events/:id/design  (Step 2 - design & config)
+    fastify.put('/:id/design', {
+        preHandler: [authenticate, requireOrganizer, validate(updateEventStep2Schema)],
+        handler: eventController.updateDesign
+    });
 
-// PUT /api/events/:id/design  (Step 2 - design & config)
-router.put(
-    '/:id/design',
-    authenticate,
-    requireOrganizer,
-    validate(updateEventStep2Schema),
-    eventController.updateDesign
-);
+    // POST /api/events/:id/submit  (Step 3 - submit for approval)
+    fastify.post('/:id/submit', {
+        preHandler: [authenticate, requireOrganizer, auditLog('SUBMIT', 'Event')],
+        handler: eventController.submitForApproval
+    });
 
-// POST /api/events/:id/submit  (Step 3 - submit for approval)
-router.post(
-    '/:id/submit',
-    authenticate,
-    requireOrganizer,
-    auditLog('SUBMIT', 'Event'),
-    eventController.submitForApproval
-);
+    // PUT /api/events/:id  (general update)
+    fastify.put('/:id', {
+        preHandler: [authenticate, requireOrganizer, validate(updateEventSchema)],
+        handler: eventController.updateEvent
+    });
 
-// PUT /api/events/:id  (general update)
-router.put(
-    '/:id',
-    authenticate,
-    requireOrganizer,
-    validate(updateEventSchema),
-    eventController.updateEvent
-);
+    // POST /api/events/:id/banner
+    fastify.post('/:id/banner', {
+        preHandler: [authenticate, requireOrganizer],
+        handler: eventController.uploadBanner
+    });
 
-// POST /api/events/:id/banner
-router.post(
-    '/:id/banner',
-    authenticate,
-    requireOrganizer,
-    uploadSingle('banner'),
-    eventController.uploadBanner
-);
+    // POST /api/events/:id/poster
+    fastify.post('/:id/poster', {
+        preHandler: [authenticate, requireOrganizer],
+        handler: eventController.uploadPoster
+    });
 
-// POST /api/events/:id/poster
-router.post(
-    '/:id/poster',
-    authenticate,
-    requireOrganizer,
-    uploadSingle('poster'),
-    eventController.uploadPoster
-);
+    // DELETE /api/events/:id
+    fastify.delete('/:id', {
+        preHandler: [authenticate, auditLog('DELETE', 'Event')],
+        handler: eventController.deleteEvent
+    });
 
-// DELETE /api/events/:id
-router.delete(
-    '/:id',
-    authenticate,
-    auditLog('DELETE', 'Event'),
-    eventController.deleteEvent
-);
+    // ── Announcements ─────────────────────────────────────────────────────────────
 
-// ── Announcements ─────────────────────────────────────────────────────────────
+    // POST /api/events/:id/announcements
+    fastify.post('/:id/announcements', {
+        preHandler: [authenticate, validate(announcementSchema)],
+        handler: announcementController.create
+    });
 
-// POST /api/events/:id/announcements
-router.post(
-    '/:id/announcements',
-    authenticate,
-    validate(announcementSchema),
-    announcementController.create
-);
+    // PUT /api/events/:id/announcements/:announcementId
+    fastify.put('/:id/announcements/:announcementId', {
+        preHandler: authenticate,
+        handler: announcementController.update
+    });
 
-// PUT /api/events/:id/announcements/:announcementId
-router.put(
-    '/:id/announcements/:announcementId',
-    authenticate,
-    announcementController.update
-);
+    // DELETE /api/events/:id/announcements/:announcementId
+    fastify.delete('/:id/announcements/:announcementId', {
+        preHandler: authenticate,
+        handler: announcementController.delete
+    });
 
-// DELETE /api/events/:id/announcements/:announcementId
-router.delete(
-    '/:id/announcements/:announcementId',
-    authenticate,
-    announcementController.delete
-);
+    // ── FAQs ──────────────────────────────────────────────────────────────────────
 
-// ── FAQs ──────────────────────────────────────────────────────────────────────
+    // POST /api/events/:id/faqs
+    fastify.post('/:id/faqs', {
+        preHandler: [authenticate, validate(faqSchema)],
+        handler: faqController.create
+    });
 
-// POST /api/events/:id/faqs
-router.post('/:id/faqs', authenticate, validate(faqSchema), faqController.create);
+    // PUT /api/events/:id/faqs/:faqId
+    fastify.put('/:id/faqs/:faqId', {
+        preHandler: authenticate,
+        handler: faqController.update
+    });
 
-// PUT /api/events/:id/faqs/:faqId
-router.put('/:id/faqs/:faqId', authenticate, faqController.update);
+    // DELETE /api/events/:id/faqs/:faqId
+    fastify.delete('/:id/faqs/:faqId', {
+        preHandler: authenticate,
+        handler: faqController.delete
+    });
 
-// DELETE /api/events/:id/faqs/:faqId
-router.delete('/:id/faqs/:faqId', authenticate, faqController.delete);
+    // ── Registration Management ───────────────────────────────────────────────────
 
-// ── Registration Management ───────────────────────────────────────────────────
+    // PUT /api/events/:id/registrations/:registrationId/approve
+    fastify.put('/:id/registrations/:registrationId/approve', {
+        preHandler: [authenticate, auditLog('APPROVE_REGISTRATION', 'Registration')],
+        handler: registrationController.approveRegistration
+    });
 
-// PUT /api/events/:id/registrations/:registrationId/approve
-router.put(
-    '/:id/registrations/:registrationId/approve',
-    authenticate,
-    auditLog('APPROVE_REGISTRATION', 'Registration'),
-    registrationController.approveRegistration
-);
+    // PUT /api/events/:id/registrations/:registrationId/reject
+    fastify.put('/:id/registrations/:registrationId/reject', {
+        preHandler: authenticate,
+        handler: registrationController.rejectRegistration
+    });
 
-// PUT /api/events/:id/registrations/:registrationId/reject
-router.put(
-    '/:id/registrations/:registrationId/reject',
-    authenticate,
-    registrationController.rejectRegistration
-);
+    // PUT /api/events/:id/registrations/:registrationId/attend
+    fastify.put('/:id/registrations/:registrationId/attend', {
+        preHandler: authenticate,
+        handler: registrationController.markAttended
+    });
+}
 
-// PUT /api/events/:id/registrations/:registrationId/attend
-router.put(
-    '/:id/registrations/:registrationId/attend',
-    authenticate,
-    registrationController.markAttended
-);
-
-export default router;

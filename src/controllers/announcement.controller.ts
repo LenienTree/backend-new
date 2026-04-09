@@ -1,105 +1,74 @@
-import { Response, NextFunction } from 'express';
+import { FastifyReply } from 'fastify';
 import { announcementService, faqService } from '../services/announcement.service';
 import { sendSuccess, sendCreated } from '../utils/apiResponse';
 import { AuthRequest } from '../types';
 
 export class AnnouncementController {
-    create = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            const ann = await announcementService.create(
-                req.params.id as string,
-                req.user!.userId,
-                req.user!.role,
-                req.body
-            );
-            sendCreated(res, ann, 'Announcement created');
-        } catch (err) {
-            next(err);
-        }
+    create = async (request: AuthRequest, reply: FastifyReply) => {
+        const ann = await announcementService.create(
+            (request.params as any).id as string,
+            request.user!.userId,
+            request.user!.role,
+            request.body as any
+        );
+        sendCreated(reply, ann, 'Announcement created');
     };
 
-    getByEvent = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            const anns = await announcementService.getByEvent(req.params.id as string);
-            sendSuccess(res, anns);
-        } catch (err) {
-            next(err);
-        }
+    getByEvent = async (request: AuthRequest, reply: FastifyReply) => {
+        const anns = await announcementService.getByEvent((request.params as any).id as string);
+        sendSuccess(reply, anns);
     };
 
-    update = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            const ann = await announcementService.update(
-                req.params.announcementId as string,
-                req.user!.userId,
-                req.body
-            );
-            sendSuccess(res, ann, 'Announcement updated');
-        } catch (err) {
-            next(err);
-        }
+    update = async (request: AuthRequest, reply: FastifyReply) => {
+        const ann = await announcementService.update(
+            (request.params as any).announcementId as string,
+            request.user!.userId,
+            request.body as any
+        );
+        sendSuccess(reply, ann, 'Announcement updated');
     };
 
-    delete = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            await announcementService.delete(
-                req.params.announcementId as string,
-                req.user!.userId,
-                req.user!.role
-            );
-            sendSuccess(res, null, 'Announcement deleted');
-        } catch (err) {
-            next(err);
-        }
+    delete = async (request: AuthRequest, reply: FastifyReply) => {
+        await announcementService.delete(
+            (request.params as any).announcementId as string,
+            request.user!.userId,
+            request.user!.role
+        );
+        sendSuccess(reply, null, 'Announcement deleted');
     };
 }
 
 export class FAQController {
-    create = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            const faq = await faqService.create(
-                req.params.id as string,
-                req.user!.userId,
-                req.user!.role,
-                req.body
-            );
-            sendCreated(res, faq, 'FAQ created');
-        } catch (err) {
-            next(err);
-        }
+    create = async (request: AuthRequest, reply: FastifyReply) => {
+        const faq = await faqService.create(
+            (request.params as any).id as string,
+            request.user!.userId,
+            request.user!.role,
+            request.body as any
+        );
+        sendCreated(reply, faq, 'FAQ created');
     };
 
-    getByEvent = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            const faqs = await faqService.getByEvent(req.params.id as string);
-            sendSuccess(res, faqs);
-        } catch (err) {
-            next(err);
-        }
+    getByEvent = async (request: AuthRequest, reply: FastifyReply) => {
+        const faqs = await faqService.getByEvent((request.params as any).id as string);
+        sendSuccess(reply, faqs);
     };
 
-    update = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            const faq = await faqService.update(
-                req.params.faqId as string,
-                req.user!.userId,
-                req.body
-            );
-            sendSuccess(res, faq, 'FAQ updated');
-        } catch (err) {
-            next(err);
-        }
+    update = async (request: AuthRequest, reply: FastifyReply) => {
+        const faq = await faqService.update(
+            (request.params as any).faqId as string,
+            request.user!.userId,
+            request.body as any
+        );
+        sendSuccess(reply, faq, 'FAQ updated');
     };
 
-    delete = async (req: AuthRequest, res: Response, next: NextFunction) => {
-        try {
-            await faqService.delete(req.params.faqId as string, req.user!.userId, req.user!.role);
-            sendSuccess(res, null, 'FAQ deleted');
-        } catch (err) {
-            next(err);
-        }
+    delete = async (request: AuthRequest, reply: FastifyReply) => {
+        await faqService.delete((request.params as any).faqId as string, request.user!.userId, request.user!.role);
+        sendSuccess(reply, null, 'FAQ deleted');
     };
 }
 
 export const announcementController = new AnnouncementController();
 export const faqController = new FAQController();
+

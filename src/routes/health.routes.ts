@@ -1,12 +1,11 @@
-import { Router } from 'express';
+import { FastifyInstance } from 'fastify';
 import { getHealth, ping } from '../controllers/health.controller';
 
-const router = Router();
+export default async function healthRoutes(fastify: FastifyInstance) {
+    // GET /api/health
+    fastify.get('/', getHealth);
 
-// GET /api/health       — full deep health check (DB, S3, memory, config)
-router.get('/', getHealth);
+    // GET /api/health/ping
+    fastify.get('/ping', ping);
+}
 
-// GET /api/health/ping  — lightweight liveness probe (no external calls)
-router.get('/ping', ping);
-
-export default router;

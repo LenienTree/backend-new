@@ -37,3 +37,9 @@ export const changePasswordSchema = z
         message: "Passwords don't match",
         path: ['confirmPassword'],
     });
+
+export const becomeOrganizerSchema = z.object({
+    orgName: z.string().min(2, 'Organization name is required').max(200),
+    orgEmail: z.string().email('Invalid organization email'),
+    eventName: z.string().min(2, 'Platform/Event name is required').max(200),
+});
