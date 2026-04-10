@@ -2,13 +2,38 @@ import { FastifyReply } from 'fastify';
 import { registrationService } from '../services/registration.service';
 import { sendSuccess, sendCreated } from '../utils/apiResponse';
 import { AuthRequest } from '../types';
+import { uploadToS3 } from '../utils/upload';
 
 export class RegistrationController {
     register = async (request: AuthRequest, reply: FastifyReply) => {
+        let formData: any;
+        let paymentProof: string | undefined;
+
+        if (request.isMultipart()) {
+            const part = await request.file();
+            if (part) {
+                const buffer = await part.toBuffer();
+                const uploadResult = await uploadToS3(buffer, 'registrations', undefined, part.mimetype);
+                paymentProof = uploadResult.secure_url;
+
+                if (part.fields.formData) {
+                    try {
+                        formData = JSON.parse((part.fields.formData as any).value);
+                    } catch (e) {
+                        formData = (part.fields.formData as any).value;
+                    }
+                }
+            }
+        } else {
+            formData = (request.body as any)?.formData;
+            paymentProof = (request.body as any)?.paymentProof;
+        }
+
         const registration = await registrationService.register(
             (request.params as any).id as string,
             request.user!.userId,
-            (request.body as any).formData
+            formData,
+            paymentProof
         );
         sendCreated(reply, registration, 'Registration successful');
     };

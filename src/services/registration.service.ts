@@ -5,7 +5,7 @@ import { getPagination, buildPaginatedResult } from '../utils/helpers';
 import { sendEmail, emailTemplates } from '../utils/email';
 
 export class RegistrationService {
-    async register(eventId: string, userId: string, formData?: Record<string, unknown>) {
+    async register(eventId: string, userId: string, formData?: Record<string, unknown>, paymentProof?: string) {
         const event = await prisma.event.findUnique({
             where: { id: eventId, deletedAt: null },
         });
@@ -37,6 +37,11 @@ export class RegistrationService {
         const isPaid = event.isPaid;
         const isAutoApproval = event.approvalMode === 'AUTO';
 
+        // Requirement check: payment_url is mandatory for paid events
+        if (isPaid && !paymentProof) {
+            throw new AppError('Payment screenshot is mandatory for paid events.', 400);
+        }
+
         let status: 'PENDING' | 'APPROVED' | 'PAYMENT_PENDING' = 'PENDING';
         let paymentStatus: 'UNPAID' | 'PAID' = 'UNPAID';
 
@@ -58,6 +63,7 @@ export class RegistrationService {
                 status,
                 paymentStatus,
                 formData: (formData ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+                paymentProof,
             },
             include: {
                 event: { select: { title: true } },

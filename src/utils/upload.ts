@@ -4,7 +4,7 @@ import s3Client from '../config/s3';
 import { config } from '../config/config';
 import { AppError } from './apiResponse';
 
-type UploadFolder = 'banners' | 'avatars' | 'gallery' | 'certificates' | 'posters';
+type UploadFolder = 'banners' | 'avatars' | 'gallery' | 'certificates' | 'posters' | 'registrations';
 
 export interface UploadResult {
     secure_url: string;

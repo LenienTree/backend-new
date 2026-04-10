@@ -48,7 +48,7 @@ export default async function eventRoutes(fastify: FastifyInstance) {
 
     // POST /api/events/:id/register
     fastify.post('/:id/register', {
-        preHandler: [authenticate, validate(registerEventSchema), auditLog('REGISTER', 'Registration')],
+        preHandler: [authenticate, auditLog('REGISTER', 'Registration')],
         handler: registrationController.register
     });
 

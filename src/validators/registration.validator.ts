@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const registerEventSchema = z.object({
     formData: z.record(z.string(), z.unknown()).optional(),
+    paymentProof: z.string().optional(), // This will store the link
 });
 
 export const announcementSchema = z.object({
