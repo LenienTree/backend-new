@@ -19,6 +19,7 @@ export class AuthService {
         phone?: string;
         college?: string;
         graduationYear?: number;
+        referralCode?: string;
     }) {
         const existing = await prisma.user.findFirst({
             where: {
@@ -60,6 +61,33 @@ export class AuthService {
         this.sendVerificationEmail(user.id, user.email, user.name).catch(
             console.error
         );
+
+        // Bind referral to user if code is present
+        if (data.referralCode) {
+            try {
+                const referral = await prisma.referral.findUnique({
+                    where: { code: data.referralCode },
+                });
+
+                if (referral) {
+                    // Update latest pending click from this IP (if needed) or just create a linkage
+                    // Simple linkage: find the latest click without a user and link it
+                    const latestClick = await prisma.referralClick.findFirst({
+                        where: { referralId: referral.id, userId: null },
+                        orderBy: { createdAt: 'desc' },
+                    });
+
+                    if (latestClick) {
+                        await prisma.referralClick.update({
+                            where: { id: latestClick.id },
+                            data: { userId: user.id },
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to process referral code during signup:", err);
+            }
+        }
 
         const payload: JwtPayload = {
             userId: user.id,

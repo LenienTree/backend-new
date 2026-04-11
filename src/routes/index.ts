@@ -6,6 +6,7 @@ import adminRoutes from './admin.routes';
 import bookmarkRoutes from './bookmark.routes';
 import organizerRoutes from './organizer.routes';
 import healthRoutes from './health.routes';
+import referralRoutes from './referral.routes';
 
 export default async function routes(fastify: FastifyInstance) {
     fastify.register(authRoutes, { prefix: '/auth' });
@@ -15,4 +16,6 @@ export default async function routes(fastify: FastifyInstance) {
     fastify.register(bookmarkRoutes, { prefix: '/bookmarks' });
     fastify.register(organizerRoutes, { prefix: '/organizer' });
     fastify.register(healthRoutes, { prefix: '/health' });
+    fastify.register(referralRoutes, { prefix: '/referral' });
 }
+

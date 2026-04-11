@@ -1618,6 +1618,93 @@
                     }
                 }
             ]
+        },
+        {
+            "name": "Referral",
+            "item": [
+                {
+                    "name": "Track Click",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"code\": \"REF-ABCDEF\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/referral/click",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "referral",
+                                "click"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Generate Referral",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"eventId\": \"<event_uuid>\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/referral/generate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "referral",
+                                "generate"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Stats",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/referral/stats/:eventId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "referral",
+                                "stats",
+                                ":eventId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "eventId",
+                                    "value": "<event_uuid>"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
         }
     ],
     "variable": [

@@ -35,6 +35,8 @@ model User {
   registrations   Registration[]
   socialLinks     SocialLink?
   skills          UserSkill[]
+  referrals       Referral[]
+  referralClicks  ReferralClick[]
 
   @@index([email])
   @@index([status])
@@ -108,6 +110,7 @@ model Event {
   organizer            User           @relation("OrganizerEvents", fields: [organizerId], references: [id])
   faqs                 FAQ[]
   registrations        Registration[]
+  referrals            Referral[]
 
   @@index([status])
   @@index([category])
@@ -119,6 +122,7 @@ model Registration {
   id            String             @id @default(uuid())
   eventId       String
   userId        String
+  referralId    String?            // Event-level referral tracking
   status        RegistrationStatus @default(PENDING)
   paymentStatus PaymentStatus      @default(UNPAID)
   formData      Json?
@@ -128,11 +132,42 @@ model Registration {
   updatedAt     DateTime           @updatedAt
   event         Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referral      Referral?          @relation(fields: [referralId], references: [id], onDelete: SetNull)
 
   @@unique([eventId, userId])
   @@index([status])
   @@index([eventId])
   @@index([userId])
+}
+
+model Referral {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  eventId     String
+  referrerId  String
+
+  clicks      Int      @default(0)
+  conversions Int      @default(0)
+
+  createdAt   DateTime @default(now())
+
+  event       Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  referrer    User            @relation(fields: [referrerId], references: [id], onDelete: Cascade)
+  clicksData  ReferralClick[]
+  registrations Registration[]
+}
+
+model ReferralClick {
+  id          String   @id @default(uuid())
+  referralId  String
+  ip          String?
+  userAgent   String?
+  userId      String?
+
+  createdAt   DateTime @default(now())
+
+  referral    Referral @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model Announcement {

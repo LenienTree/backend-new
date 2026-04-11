@@ -13,6 +13,7 @@ export const registerSchema = z.object({
     phone: z.string().optional(),
     college: z.string().optional(),
     graduationYear: z.number().int().min(2000).max(2035).optional(),
+    referralCode: z.string().optional(),
 });
 
 export const loginSchema = z.object({
