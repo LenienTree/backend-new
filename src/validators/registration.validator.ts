@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const registerEventSchema = z.object({
     formData: z.record(z.string(), z.unknown()).optional(),
     paymentProof: z.string().optional(), // This will store the link
-    referralId: z.string().uuid().optional(),
+    referralCode: z.string().optional(),
 });
 
 export const announcementSchema = z.object({

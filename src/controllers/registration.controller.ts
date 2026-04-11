@@ -8,7 +8,7 @@ export class RegistrationController {
     register = async (request: AuthRequest, reply: FastifyReply) => {
         let formData: any;
         let paymentProof: string | undefined;
-        let referralId: string | undefined;
+        let referralCode: string | undefined;
 
         if (request.isMultipart()) {
             const part = await request.file();
@@ -25,14 +25,14 @@ export class RegistrationController {
                     }
                 }
                 
-                if (part.fields.referralId) {
-                    referralId = (part.fields.referralId as any).value;
+                if (part.fields.referralCode) {
+                    referralCode = (part.fields.referralCode as any).value;
                 }
             }
         } else {
             formData = (request.body as any)?.formData;
             paymentProof = (request.body as any)?.paymentProof;
-            referralId = (request.body as any)?.referralId;
+            referralCode = (request.body as any)?.referralCode;
         }
 
         const registration = await registrationService.register(
@@ -40,7 +40,7 @@ export class RegistrationController {
             request.user!.userId,
             formData,
             paymentProof,
-            referralId
+            referralCode
         );
         sendCreated(reply, registration, 'Registration successful');
     };

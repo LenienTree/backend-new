@@ -5,7 +5,7 @@ import { getPagination, buildPaginatedResult } from '../utils/helpers';
 import { sendEmail, emailTemplates } from '../utils/email';
 
 export class RegistrationService {
-    async register(eventId: string, userId: string, formData?: Record<string, unknown>, paymentProof?: string, referralId?: string) {
+    async register(eventId: string, userId: string, formData?: Record<string, unknown>, paymentProof?: string, referralCode?: string) {
         const event = await prisma.event.findUnique({
             where: { id: eventId, deletedAt: null },
         });
@@ -56,11 +56,19 @@ export class RegistrationService {
             event: { title: string };
         };
 
+        let finalReferralId: string | null = null;
+        if (referralCode) {
+            const refMatch = await prisma.referral.findUnique({ where: { code: referralCode } });
+            if (refMatch && refMatch.eventId === eventId) {
+                finalReferralId = refMatch.id;
+            }
+        }
+
         const registration = await prisma.registration.create({
             data: {
                 eventId,
                 userId,
-                referralId: referralId || null,
+                referralId: finalReferralId,
                 status,
                 paymentStatus,
                 formData: (formData ?? Prisma.JsonNull) as Prisma.InputJsonValue,
@@ -83,9 +91,9 @@ export class RegistrationService {
             }).catch(console.error);
         }
 
-        if (referralId) {
+        if (finalReferralId) {
             await prisma.referral.update({
-                where: { id: referralId },
+                where: { id: finalReferralId },
                 data: { conversions: { increment: 1 } },
             }).catch(e => console.error("Error updating referral conversions:", e));
         }
