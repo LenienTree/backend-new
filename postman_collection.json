@@ -1623,86 +1623,1109 @@
             "name": "Referral",
             "item": [
                 {
-                    "name": "Track Click",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"code\": \"REF-ABCDEF\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/referral/click",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "referral",
-                                "click"
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Generate Referral",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"eventId\": \"<event_uuid>\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/referral/generate",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "referral",
-                                "generate"
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Get Stats",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{baseUrl}}/api/referral/stats/:eventId",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "referral",
-                                "stats",
-                                ":eventId"
-                            ],
-                            "variable": [
+                    "name": "Public",
+                    "item": [
+                        {
+                            "name": "Track Click (public, optionalAuth)",
+                            "event": [
                                 {
-                                    "key": "eventId",
-                                    "value": "<event_uuid>"
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                                            "pm.test('tracked is true', function() {",
+                                            "    var j = pm.response.json();",
+                                            "    pm.expect(j.success).to.be.true;",
+                                            "    pm.expect(j.data.tracked).to.be.true;",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
                                 }
-                            ]
+                            ],
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"code\": \"{{referralCode}}\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/click",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "click"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Track Click - Invalid Code (404)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 404 for invalid code', function() { pm.response.to.have.status(404); });",
+                                            "pm.test('success is false', function() { pm.expect(pm.response.json().success).to.be.false; });"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"code\": \"REF-INVALID\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/click",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "click"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Track Click - Missing code field (400)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 400 when code missing', function() { pm.response.to.have.status(400); });"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/click",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "click"
+                                    ]
+                                }
+                            },
+                            "response": []
                         }
-                    },
-                    "response": []
+                    ]
+                },
+                {
+                    "name": "Admin",
+                    "item": [
+                        {
+                            "name": "1. List All Colleges",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                                            "pm.test('Returns array of college strings', function() {",
+                                            "    var j = pm.response.json();",
+                                            "    pm.expect(j.success).to.be.true;",
+                                            "    pm.expect(j.data).to.be.an('array');",
+                                            "    if (j.data.length > 0) {",
+                                            "        pm.collectionVariables.set('referralCollege', j.data[0]);",
+                                            "        console.log('Auto-set referralCollege to: ' + j.data[0]);",
+                                            "    }",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/admin/colleges",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "admin",
+                                        "colleges"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "2. List Students by College",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                                            "pm.test('Students have id, name, email, college fields', function() {",
+                                            "    var j = pm.response.json();",
+                                            "    pm.expect(j.success).to.be.true;",
+                                            "    pm.expect(j.data).to.be.an('array');",
+                                            "    if (j.data.length > 0) {",
+                                            "        var s = j.data[0];",
+                                            "        pm.expect(s).to.have.property('id');",
+                                            "        pm.expect(s).to.have.property('name');",
+                                            "        pm.expect(s).to.have.property('email');",
+                                            "        pm.expect(s).to.have.property('college');",
+                                            "        pm.collectionVariables.set('refereeUserId', s.id);",
+                                            "        console.log('Auto-set refereeUserId to: ' + s.id);",
+                                            "    }",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/admin/colleges/:college/students",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "admin",
+                                        "colleges",
+                                        ":college",
+                                        "students"
+                                    ],
+                                    "variable": [
+                                        {
+                                            "key": "college",
+                                            "value": "{{referralCollege}}"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "3. Generate Referral Link",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                                            "pm.test('Response has code, link, referee', function() {",
+                                            "    var j = pm.response.json();",
+                                            "    pm.expect(j.success).to.be.true;",
+                                            "    pm.expect(j.data).to.have.property('code');",
+                                            "    pm.expect(j.data).to.have.property('link');",
+                                            "    pm.expect(j.data.link).to.include('?ref=');",
+                                            "    pm.expect(j.data).to.have.property('referee');",
+                                            "    pm.expect(j.data.referee).to.have.property('id');",
+                                            "    pm.collectionVariables.set('referralCode', j.data.code);",
+                                            "    pm.collectionVariables.set('referralLink', j.data.link);",
+                                            "    console.log('Generated code: ' + j.data.code + ' | Link: ' + j.data.link);",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"eventId\": \"{{eventId}}\",\n    \"refereeUserId\": \"{{refereeUserId}}\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/admin/generate",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "admin",
+                                        "generate"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "3b. Generate - Idempotent (same code returned)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200 on duplicate generate', function() { pm.response.to.have.status(200); });",
+                                            "pm.test('Same code returned as before', function() {",
+                                            "    var j = pm.response.json();",
+                                            "    pm.expect(j.data.code).to.equal(pm.collectionVariables.get('referralCode'));",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"eventId\": \"{{eventId}}\",\n    \"refereeUserId\": \"{{refereeUserId}}\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/admin/generate",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "admin",
+                                        "generate"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "4. Get Stats for Any Event",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                                            "pm.test('Stats has required fields', function() {",
+                                            "    var j = pm.response.json();",
+                                            "    pm.expect(j.success).to.be.true;",
+                                            "    pm.expect(j.data).to.have.property('totalClicks');",
+                                            "    pm.expect(j.data).to.have.property('totalConversions');",
+                                            "    pm.expect(j.data).to.have.property('referrals');",
+                                            "    pm.expect(j.data.referrals).to.be.an('array');",
+                                            "    if (j.data.referrals.length > 0) {",
+                                            "        var r = j.data.referrals[0];",
+                                            "        pm.expect(r).to.have.property('code');",
+                                            "        pm.expect(r).to.have.property('link');",
+                                            "        pm.expect(r).to.have.property('clicks');",
+                                            "        pm.expect(r).to.have.property('conversions');",
+                                            "        pm.expect(r).to.have.property('referrer');",
+                                            "        pm.expect(r).to.have.property('recentClicks');",
+                                            "    }",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/admin/stats/:eventId",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "admin",
+                                        "stats",
+                                        ":eventId"
+                                    ],
+                                    "variable": [
+                                        {
+                                            "key": "eventId",
+                                            "value": "{{eventId}}"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Generate - Missing eventId (400)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 400 on missing eventId', function() { pm.response.to.have.status(400); });",
+                                            "pm.test('success is false', function() { pm.expect(pm.response.json().success).to.be.false; });"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"refereeUserId\": \"{{refereeUserId}}\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/admin/generate",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "admin",
+                                        "generate"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Generate - Non-Admin token (403)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 403 for non-admin user', function() { pm.response.to.have.status(403); });"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"eventId\": \"{{eventId}}\",\n    \"refereeUserId\": \"{{refereeUserId}}\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/admin/generate",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "admin",
+                                        "generate"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Generate - No Auth (401)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 401 without any token', function() { pm.response.to.have.status(401); });"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"eventId\": \"{{eventId}}\",\n    \"refereeUserId\": \"{{refereeUserId}}\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/admin/generate",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "admin",
+                                        "generate"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Organizer",
+                    "item": [
+                        {
+                            "name": "1. List My Events",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                                            "pm.test('Returns organizer events with id and title', function() {",
+                                            "    var j = pm.response.json();",
+                                            "    pm.expect(j.success).to.be.true;",
+                                            "    pm.expect(j.data).to.be.an('array');",
+                                            "    if (j.data.length > 0) {",
+                                            "        var ev = j.data[0];",
+                                            "        pm.expect(ev).to.have.property('id');",
+                                            "        pm.expect(ev).to.have.property('title');",
+                                            "        pm.expect(ev).to.have.property('status');",
+                                            "        pm.collectionVariables.set('eventId', ev.id);",
+                                            "        console.log('Auto-set eventId to: ' + ev.id + ' (' + ev.title + ')');",
+                                            "    }",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/organizer/events",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "organizer",
+                                        "events"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "2. List All Colleges (platform-wide)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                                            "pm.test('Returns sorted array of colleges', function() {",
+                                            "    var j = pm.response.json();",
+                                            "    pm.expect(j.success).to.be.true;",
+                                            "    pm.expect(j.data).to.be.an('array');",
+                                            "    if (j.data.length > 0) {",
+                                            "        pm.collectionVariables.set('referralCollege', j.data[0]);",
+                                            "        console.log('Auto-set referralCollege to: ' + j.data[0]);",
+                                            "    }",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/organizer/colleges",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "organizer",
+                                        "colleges"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "3. List Students by College",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                                            "pm.test('Students have id, name, email, college, graduationYear', function() {",
+                                            "    var j = pm.response.json();",
+                                            "    pm.expect(j.success).to.be.true;",
+                                            "    pm.expect(j.data).to.be.an('array');",
+                                            "    if (j.data.length > 0) {",
+                                            "        var s = j.data[0];",
+                                            "        pm.expect(s).to.have.property('id');",
+                                            "        pm.expect(s).to.have.property('name');",
+                                            "        pm.expect(s).to.have.property('email');",
+                                            "        pm.expect(s).to.have.property('college');",
+                                            "        pm.collectionVariables.set('refereeUserId', s.id);",
+                                            "        console.log('Auto-set refereeUserId to: ' + s.id);",
+                                            "    }",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/organizer/colleges/:college/students",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "organizer",
+                                        "colleges",
+                                        ":college",
+                                        "students"
+                                    ],
+                                    "variable": [
+                                        {
+                                            "key": "college",
+                                            "value": "{{referralCollege}}"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "4. Generate Referral Link (own event)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                                            "pm.test('Response has code, link, referee', function() {",
+                                            "    var j = pm.response.json();",
+                                            "    pm.expect(j.success).to.be.true;",
+                                            "    pm.expect(j.data).to.have.property('code');",
+                                            "    pm.expect(j.data).to.have.property('link');",
+                                            "    pm.expect(j.data.link).to.include('?ref=');",
+                                            "    pm.expect(j.data).to.have.property('referee');",
+                                            "    pm.expect(j.data.referee).to.have.property('id');",
+                                            "    pm.collectionVariables.set('referralCode', j.data.code);",
+                                            "    pm.collectionVariables.set('referralLink', j.data.link);",
+                                            "    console.log('Generated code: ' + j.data.code + ' | Link: ' + j.data.link);",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"eventId\": \"{{eventId}}\",\n    \"refereeUserId\": \"{{refereeUserId}}\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/organizer/generate",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "organizer",
+                                        "generate"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "4b. Generate - Idempotent (same code returned)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200 on duplicate generate', function() { pm.response.to.have.status(200); });",
+                                            "pm.test('Same code returned as previous call', function() {",
+                                            "    var j = pm.response.json();",
+                                            "    pm.expect(j.data.code).to.equal(pm.collectionVariables.get('referralCode'));",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"eventId\": \"{{eventId}}\",\n    \"refereeUserId\": \"{{refereeUserId}}\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/organizer/generate",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "organizer",
+                                        "generate"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "5. Get Stats for My Event",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', function() { pm.response.to.have.status(200); });",
+                                            "pm.test('Stats has totalClicks, totalConversions, referrals array', function() {",
+                                            "    var j = pm.response.json();",
+                                            "    pm.expect(j.success).to.be.true;",
+                                            "    pm.expect(j.data).to.have.property('totalClicks');",
+                                            "    pm.expect(j.data).to.have.property('totalConversions');",
+                                            "    pm.expect(j.data.referrals).to.be.an('array');",
+                                            "    if (j.data.referrals.length > 0) {",
+                                            "        var r = j.data.referrals[0];",
+                                            "        pm.expect(r).to.have.property('code');",
+                                            "        pm.expect(r).to.have.property('link');",
+                                            "        pm.expect(r).to.have.property('clicks');",
+                                            "        pm.expect(r).to.have.property('conversions');",
+                                            "        pm.expect(r).to.have.property('referrer');",
+                                            "    }",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/organizer/stats/:eventId",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "organizer",
+                                        "stats",
+                                        ":eventId"
+                                    ],
+                                    "variable": [
+                                        {
+                                            "key": "eventId",
+                                            "value": "{{eventId}}"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Generate - Not My Event (403)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 403 for event not owned by organizer', function() { pm.response.to.have.status(403); });",
+                                            "pm.test('Error message mentions own events', function() {",
+                                            "    var j = pm.response.json();",
+                                            "    pm.expect(j.success).to.be.false;",
+                                            "    pm.expect(j.message).to.include('own events');",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"eventId\": \"00000000-0000-0000-0000-000000000000\",\n    \"refereeUserId\": \"{{refereeUserId}}\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/organizer/generate",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "organizer",
+                                        "generate"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Generate - Non-Organizer User (403)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 403 for non-organizer user', function() { pm.response.to.have.status(403); });"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{regularUserToken}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"eventId\": \"{{eventId}}\",\n    \"refereeUserId\": \"{{refereeUserId}}\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/organizer/generate",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "organizer",
+                                        "generate"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Generate - No Auth (401)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 401 without any token', function() { pm.response.to.have.status(401); });"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"eventId\": \"{{eventId}}\",\n    \"refereeUserId\": \"{{refereeUserId}}\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/organizer/generate",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "organizer",
+                                        "generate"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Stats - Not My Event (403)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 403 for stats on event not owned', function() { pm.response.to.have.status(403); });"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/referral/organizer/stats/:eventId",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "referral",
+                                        "organizer",
+                                        "stats",
+                                        ":eventId"
+                                    ],
+                                    "variable": [
+                                        {
+                                            "key": "eventId",
+                                            "value": "00000000-0000-0000-0000-000000000000"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }
+                    ]
                 }
             ]
         }
@@ -1746,6 +2769,36 @@
         {
             "key": "imageId",
             "value": "image-uuid",
+            "type": "string"
+        },
+        {
+            "key": "adminToken",
+            "value": "admin-jwt-token-here",
+            "type": "string"
+        },
+        {
+            "key": "referralCode",
+            "value": "REF-XXXXXX",
+            "type": "string"
+        },
+        {
+            "key": "referralCollege",
+            "value": "Example University",
+            "type": "string"
+        },
+        {
+            "key": "refereeUserId",
+            "value": "user-uuid",
+            "type": "string"
+        },
+        {
+            "key": "referralLink",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "regularUserToken",
+            "value": "regular-jwt-token-here",
             "type": "string"
         }
     ]

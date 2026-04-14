@@ -27,6 +27,7 @@ jest.mock('../src/config/database', () => ({
         $connect: jest.fn().mockResolvedValue(undefined),
         $disconnect: jest.fn().mockResolvedValue(undefined),
         $queryRaw: jest.fn().mockResolvedValue([{ 1: 1 }]),
+        $transaction: jest.fn((ops: unknown[]) => Promise.all(ops)),
         user: {
             findUnique: jest.fn(),
             findFirst: jest.fn(),
@@ -53,6 +54,16 @@ jest.mock('../src/config/database', () => ({
             update: jest.fn(),
             count: jest.fn(),
         },
+        referral: {
+            findUnique: jest.fn(),
+            findFirst: jest.fn(),
+            findMany: jest.fn(),
+            create: jest.fn(),
+            update: jest.fn(),
+        },
+        referralClick: {
+            create: jest.fn(),
+        },
         announcement: {
             findMany: jest.fn(),
             create: jest.fn(),
@@ -66,6 +77,9 @@ jest.mock('../src/config/database', () => ({
         },
         certificate: {
             findMany: jest.fn(),
+        },
+        auditLog: {
+            create: jest.fn().mockResolvedValue({}),
         },
     },
 }));
