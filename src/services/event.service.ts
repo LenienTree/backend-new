@@ -98,11 +98,7 @@ export class EventService {
     }
 
     async updateEvent(eventId: string, organizerId: string, data: Partial<Prisma.EventUpdateInput>) {
-        const event = await this.verifyOwnership(eventId, organizerId);
-
-        if (!['DRAFT', 'REJECTED'].includes(event.status)) {
-            throw new AppError('You can only edit events in DRAFT or REJECTED status.', 400);
-        }
+        await this.verifyOwnership(eventId, organizerId);
 
         return prisma.event.update({
             where: { id: eventId },
