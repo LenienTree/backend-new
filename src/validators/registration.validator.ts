@@ -4,6 +4,9 @@ export const registerEventSchema = z.object({
     formData: z.record(z.string(), z.unknown()).optional(),
     paymentProof: z.string().optional(), // This will store the link
     referralCode: z.string().optional(),
+    razorpayPaymentId: z.string().optional(),
+    razorpayOrderId: z.string().optional(),
+    razorpaySignature: z.string().optional(),
 });
 
 export const announcementSchema = z.object({

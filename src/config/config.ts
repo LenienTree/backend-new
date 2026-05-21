@@ -35,4 +35,9 @@ export const config = {
         pass: process.env.SMTP_PASS || '',
         from: process.env.EMAIL_FROM || 'no-reply@lenienttree.com',
     },
+
+    razorpay: {
+        keyId: process.env.RAZORPAY_KEY_ID || '',
+        keySecret: process.env.RAZORPAY_KEY_SECRET || '',
+    },
 };

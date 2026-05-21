@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { eventController } from '../controllers/event.controller';
 import { registrationController } from '../controllers/registration.controller';
+import { paymentController } from '../controllers/payment.controller';
 import { announcementController, faqController } from '../controllers/announcement.controller';
 import { authenticate, requireOrganizer, optionalAuth } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate.middleware';
@@ -58,6 +59,12 @@ export default async function eventRoutes(fastify: FastifyInstance) {
         handler: registrationController.getParticipants
     });
 
+    // POST /api/events/:id/create-razorpay-order
+    fastify.post('/:id/create-razorpay-order', {
+        preHandler: authenticate,
+        handler: paymentController.createRazorpayOrder
+    });
+
     // ── Organizer CRUD ────────────────────────────────────────────────────────────
 
     // POST /api/events  (Step 1 - create draft)
@@ -94,6 +101,12 @@ export default async function eventRoutes(fastify: FastifyInstance) {
     fastify.post('/:id/poster', {
         preHandler: [authenticate, requireOrganizer],
         handler: eventController.uploadPoster
+    });
+
+    // POST /api/events/:id/upi-qr
+    fastify.post('/:id/upi-qr', {
+        preHandler: [authenticate, requireOrganizer],
+        handler: eventController.uploadUpiQrCode
     });
 
     // DELETE /api/events/:id

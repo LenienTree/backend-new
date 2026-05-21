@@ -94,7 +94,13 @@ model Event {
   approvalMode         ApprovalMode   @default(AUTO)
   status               EventStatus    @default(DRAFT)
   isPaid               Boolean        @default(false)
+  registrationType     RegistrationType @default(INDIVIDUAL)
+  minTeamSize          Int?
+  maxTeamSize          Int?
   ticketPrice          Float?
+  paymentType          PaymentType    @default(FREE)
+  upiId                String?
+  upiQrCode            String?
   primaryColor         String?
   secondaryColor       String?
   accentColor          String?
@@ -285,8 +291,19 @@ enum RegistrationStatus {
   ATTENDED
 }
 
+enum RegistrationType {
+  INDIVIDUAL
+  GROUP
+}
+
 enum PaymentStatus {
   UNPAID
   PAID
   REFUNDED
+}
+
+enum PaymentType {
+  FREE
+  MANUAL_UPI
+  RAZORPAY
 }

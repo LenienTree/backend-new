@@ -9,6 +9,9 @@ export class RegistrationController {
         let formData: any;
         let paymentProof: string | undefined;
         let referralCode: string | undefined;
+        let razorpayPaymentId: string | undefined;
+        let razorpayOrderId: string | undefined;
+        let razorpaySignature: string | undefined;
 
         if (request.isMultipart()) {
             const part = await request.file();
@@ -28,11 +31,17 @@ export class RegistrationController {
                 if (part.fields.referralCode) {
                     referralCode = (part.fields.referralCode as any).value;
                 }
+                if (part.fields.razorpayPaymentId) razorpayPaymentId = (part.fields.razorpayPaymentId as any).value;
+                if (part.fields.razorpayOrderId) razorpayOrderId = (part.fields.razorpayOrderId as any).value;
+                if (part.fields.razorpaySignature) razorpaySignature = (part.fields.razorpaySignature as any).value;
             }
         } else {
             formData = (request.body as any)?.formData;
             paymentProof = (request.body as any)?.paymentProof;
             referralCode = (request.body as any)?.referralCode;
+            razorpayPaymentId = (request.body as any)?.razorpayPaymentId;
+            razorpayOrderId = (request.body as any)?.razorpayOrderId;
+            razorpaySignature = (request.body as any)?.razorpaySignature;
         }
 
         const registration = await registrationService.register(
@@ -40,7 +49,10 @@ export class RegistrationController {
             request.user!.userId,
             formData,
             paymentProof,
-            referralCode
+            referralCode,
+            razorpayPaymentId,
+            razorpayOrderId,
+            razorpaySignature
         );
         sendCreated(reply, registration, 'Registration successful');
     };

@@ -3,9 +3,19 @@ import { Prisma } from '@prisma/client';
 import { AppError } from '../utils/apiResponse';
 import { getPagination, buildPaginatedResult } from '../utils/helpers';
 import { sendEmail, emailTemplates } from '../utils/email';
+import crypto from 'crypto';
 
 export class RegistrationService {
-    async register(eventId: string, userId: string, formData?: Record<string, unknown>, paymentProof?: string, referralCode?: string) {
+    async register(
+        eventId: string, 
+        userId: string, 
+        formData?: Record<string, unknown>, 
+        paymentProof?: string, 
+        referralCode?: string,
+        razorpayPaymentId?: string,
+        razorpayOrderId?: string,
+        razorpaySignature?: string
+    ) {
         const event = await prisma.event.findUnique({
             where: { id: eventId, deletedAt: null },
         });
@@ -37,16 +47,36 @@ export class RegistrationService {
         const isPaid = event.isPaid;
         const isAutoApproval = event.approvalMode === 'AUTO';
 
-        // Requirement check: payment_url is mandatory for paid events
-        if (isPaid && !paymentProof) {
-            throw new AppError('Payment screenshot is mandatory for paid events.', 400);
+        // Requirement check: payment_url or razorpay signature is mandatory for paid events
+        if (isPaid && !paymentProof && !razorpayPaymentId) {
+            throw new AppError('Payment proof or successful payment is mandatory for paid events.', 400);
         }
 
         let status: 'PENDING' | 'APPROVED' | 'PAYMENT_PENDING' = 'PENDING';
         let paymentStatus: 'UNPAID' | 'PAID' = 'UNPAID';
+        let finalPaymentRef = paymentProof;
 
         if (isPaid) {
-            status = 'PAYMENT_PENDING';
+            if (razorpayPaymentId && razorpayOrderId && razorpaySignature) {
+                // Verify signature
+                const secret = process.env.RAZORPAY_KEY_SECRET;
+                if (!secret) throw new AppError('Razorpay secret not configured', 500);
+                
+                const generatedSignature = crypto
+                    .createHmac('sha256', secret)
+                    .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+                    .digest('hex');
+
+                if (generatedSignature !== razorpaySignature) {
+                    throw new AppError('Invalid payment signature', 400);
+                }
+
+                paymentStatus = 'PAID';
+                finalPaymentRef = razorpayPaymentId;
+                status = isAutoApproval ? 'APPROVED' : 'PENDING';
+            } else {
+                status = 'PAYMENT_PENDING';
+            }
         } else if (isAutoApproval) {
             status = 'APPROVED';
         }
@@ -72,7 +102,8 @@ export class RegistrationService {
                 status,
                 paymentStatus,
                 formData: (formData ?? Prisma.JsonNull) as Prisma.InputJsonValue,
-                paymentProof,
+                paymentProof: finalPaymentRef,
+                paymentRef: razorpayOrderId || undefined,
             },
             include: {
                 event: { select: { title: true } },
@@ -156,13 +187,13 @@ export class RegistrationService {
             throw new AppError('Not authorized.', 403);
         }
 
-        if (reg.status !== 'PENDING') {
-            throw new AppError('Only PENDING registrations can be approved.', 400);
+        if (reg.status !== 'PENDING' && reg.status !== 'PAYMENT_PENDING') {
+            throw new AppError('Only PENDING or PAYMENT_PENDING registrations can be approved.', 400);
         }
 
         const updated = await prisma.registration.update({
             where: { id: registrationId },
-            data: { status: 'APPROVED' },
+            data: { status: 'APPROVED', paymentStatus: 'PAID' },
         });
 
         sendEmail({

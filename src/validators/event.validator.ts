@@ -23,6 +23,27 @@ export const createEventStep1Schema = z.object({
     prizeAmount: z.number().min(0).optional(),
     isPaid: z.boolean().default(false),
     ticketPrice: z.number().min(0).optional(),
+    registrationType: z.enum(['INDIVIDUAL', 'GROUP']).default('INDIVIDUAL'),
+    minTeamSize: z.number().int().min(1).optional(),
+    maxTeamSize: z.number().int().min(1).optional(),
+    faqs: z
+        .array(
+            z.object({
+                question: z.string().min(5, 'Question must be at least 5 characters').max(500),
+                answer: z.string().min(5, 'Answer must be at least 5 characters'),
+                order: z.number().int().min(0).optional(),
+            })
+        )
+        .optional(),
+    announcements: z
+        .array(
+            z.object({
+                title: z.string().min(2, 'Title must be at least 2 characters').max(200),
+                content: z.string().min(5, 'Content must be at least 5 characters'),
+                publishDate: z.string().datetime().optional(),
+            })
+        )
+        .optional(),
 });
 
 export const updateEventStep2Schema = z.object({
@@ -45,6 +66,8 @@ export const updateEventStep2Schema = z.object({
             })
         )
         .optional(),
+    paymentType: z.enum(['FREE', 'MANUAL_UPI', 'RAZORPAY']).optional(),
+    upiId: z.string().nullable().optional(),
 });
 
 export const submitEventSchema = z.object({
@@ -56,7 +79,12 @@ export const submitEventSchema = z.object({
 
 export const updateEventSchema = createEventStep1Schema.partial().merge(
     updateEventStep2Schema.partial()
-);
+).extend({
+    venueName: z.string().nullable().optional(),
+    address: z.string().nullable().optional(),
+    mapLink: z.string().nullable().optional(),
+    upiQrCode: z.string().nullable().optional(),
+});
 
 export const eventFiltersSchema = z.object({
     category: z.enum(['Hackathon', 'Ideathon', 'Webinar', 'Conclave', 'Other']).optional(),

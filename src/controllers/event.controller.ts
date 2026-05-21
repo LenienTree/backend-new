@@ -65,6 +65,20 @@ export class EventController {
         sendSuccess(reply, event, 'Poster uploaded');
     };
 
+    uploadUpiQrCode = async (request: AuthRequest, reply: FastifyReply) => {
+        const fileData = await request.file();
+        if (!fileData) throw new Error('No file uploaded');
+        
+        const buffer = await fileData.toBuffer();
+        const result = await uploadToS3(buffer, 'qr-codes', undefined, fileData.mimetype);
+        const event = await eventService.uploadUpiQrCode(
+            (request.params as any).id as string,
+            request.user!.userId,
+            result.secure_url
+        );
+        sendSuccess(reply, event, 'UPI QR Code uploaded');
+    };
+
     getEvents = async (request: AuthRequest, reply: FastifyReply) => {
         const filters = request.query as EventFilters;
 

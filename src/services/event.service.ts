@@ -23,9 +23,14 @@ export class EventService {
             prizeAmount?: number;
             isPaid?: boolean;
             ticketPrice?: number;
+            registrationType?: string;
+            minTeamSize?: number;
+            maxTeamSize?: number;
+            faqs?: { question: string; answer: string; order?: number }[];
+            announcements?: { title: string; content: string; publishDate?: string }[];
         }
     ) {
-        const { location, ...eventData } = data;
+        const { location, faqs, announcements, ...eventData } = data;
 
         const event = await prisma.event.create({
             data: {
@@ -41,6 +46,24 @@ export class EventService {
                 venueName: location?.venueName,
                 address: location?.address,
                 mapLink: location?.mapLink,
+                registrationType: (data.registrationType || 'INDIVIDUAL') as any,
+                minTeamSize: data.minTeamSize,
+                maxTeamSize: data.maxTeamSize,
+                faqs: faqs && faqs.length > 0 ? {
+                    create: faqs.map((f, i) => ({
+                        question: f.question,
+                        answer: f.answer,
+                        order: f.order ?? (i + 1)
+                    }))
+                } : undefined,
+                announcements: announcements && announcements.length > 0 ? {
+                    create: announcements.map(a => ({
+                        title: a.title,
+                        content: a.content,
+                        publishDate: a.publishDate ? new Date(a.publishDate) : new Date(),
+                        createdBy: organizerId
+                    }))
+                } : undefined
             },
         });
 
@@ -59,6 +82,8 @@ export class EventService {
                 accentColor?: string;
             };
             customFormFields?: unknown;
+            paymentType?: string;
+            upiId?: string;
         }
     ) {
         await this.verifyOwnership(eventId, organizerId);
@@ -74,6 +99,8 @@ export class EventService {
                 secondaryColor: designConfig?.secondaryColor,
                 accentColor: designConfig?.accentColor,
                 customFormFields: data.customFormFields as Prisma.InputJsonValue,
+                paymentType: (data.paymentType || 'FREE') as Prisma.EventUncheckedUpdateInput['paymentType'],
+                upiId: data.upiId,
             },
         });
     }
@@ -124,6 +151,15 @@ export class EventService {
         });
     }
 
+    async uploadUpiQrCode(eventId: string, organizerId: string, qrCodeUrl: string) {
+        await this.verifyOwnership(eventId, organizerId);
+        return prisma.event.update({
+            where: { id: eventId },
+            data: { upiQrCode: qrCodeUrl },
+            select: { id: true, upiQrCode: true },
+        });
+    }
+
     async getEvents(filters: EventFilters) {
         const { page, limit, category, month, status, search, mode, isPaid, organizerId } = filters;
         const { skip, page: p, limit: l } = getPagination(page, limit);
@@ -171,6 +207,9 @@ export class EventService {
                     venueName: true,
                     maxParticipants: true,
                     isFeatured: true,
+                    registrationType: true,
+                    minTeamSize: true,
+                    maxTeamSize: true,
                     organizer: {
                         select: { id: true, name: true, profileImage: true },
                     },
