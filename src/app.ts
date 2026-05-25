@@ -85,6 +85,37 @@ app.register(rateLimit, {
     timeWindow: config.rateLimit.windowMs,
 });
 
+// ── Root Health Check ─────────────────────────────────────────────────────────
+const serverStartTime = Date.now();
+app.get('/', async (request, reply) => {
+    reply.status(200).send({
+        status: 'healthy',
+        message: 'LenientTree Backend API is operational',
+        uptimeSeconds: Math.floor((Date.now() - serverStartTime) / 1000),
+        deployment: {
+            version: '1.1.0',
+            updatedAt: '2026-05-26T00:58:51+05:30',
+            features: [
+                'Centralized automated email notification system',
+                'SMTP connection pooling & fallback degraded mode',
+                'Vercel dynamic preview CORS allowed origins'
+            ]
+        }
+    });
+});
+
+app.get('/health', async (request, reply) => {
+    reply.status(200).send({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptimeSeconds: Math.floor((Date.now() - serverStartTime) / 1000),
+        deployment: {
+            version: '1.1.0',
+            updatedAt: '2026-05-26T00:58:51+05:30'
+        }
+    });
+});
+
 // ── Routes ────────────────────────────────────────────────────────────────────
 // We prefix all routes with /api as per existing structure
 app.register(routes, { prefix: '/api' });
