@@ -22,22 +22,28 @@ export default async function userRoutes(fastify: FastifyInstance) {
 
     // POST /api/users/profile-image
     fastify.post('/profile-image', userController.uploadProfileImage);
+    fastify.post('/me/avatar', userController.uploadProfileImage);
 
     // POST /api/users/gallery
     fastify.post('/gallery', userController.addGalleryImage);
+    fastify.post('/me/gallery', userController.addGalleryImage);
 
     // DELETE /api/users/gallery/:imageId
     fastify.delete('/gallery/:imageId', userController.deleteGalleryImage);
+    fastify.delete('/me/gallery/:imageId', userController.deleteGalleryImage);
 
     // POST /api/users/change-password
     fastify.post('/change-password', { preHandler: validate(changePasswordSchema) }, userController.changePassword);
+    fastify.put('/me/password', { preHandler: validate(changePasswordSchema) }, userController.changePassword);
 
     // POST /api/users/me/become-organizer
     fastify.post('/me/become-organizer', { preHandler: validate(becomeOrganizerSchema) }, userController.becomeOrganizer);
 
     // GET /api/users/my-events
     fastify.get('/my-events', userController.getMyEvents);
+    fastify.get('/me/events', userController.getMyEvents);
 
     // GET /api/users/certificates
     fastify.get('/certificates', userController.getCertificates);
+    fastify.get('/me/certificates', userController.getCertificates);
 }

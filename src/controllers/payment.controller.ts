@@ -2,6 +2,7 @@ import { FastifyReply } from 'fastify';
 import { AuthRequest } from '../types';
 import { prisma } from '../config/database';
 import { AppError, sendSuccess } from '../utils/apiResponse';
+// @ts-ignore
 import Razorpay from 'razorpay';
 
 export class PaymentController {

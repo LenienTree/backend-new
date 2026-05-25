@@ -82,7 +82,7 @@ export class EventController {
     getEvents = async (request: AuthRequest, reply: FastifyReply) => {
         const filters = request.query as EventFilters;
 
-        if (request.user?.role !== 'ADMIN') {
+        if (request.user?.role !== 'ADMIN' && (!request.user?.userId || request.user.userId !== filters.organizerId)) {
             if (!filters.status) filters.status = 'APPROVED';
             if (filters.status !== 'APPROVED') {
                 filters.status = 'APPROVED';
