@@ -10,6 +10,7 @@ import {
 import { sendEmail, emailTemplates } from '../utils/email';
 import { config } from '../config/config';
 import { JwtPayload } from '../types';
+import { emailEmitter, EmailEvent } from '../modules/email';
 
 export class AuthService {
     async register(data: {
@@ -61,6 +62,13 @@ export class AuthService {
         this.sendVerificationEmail(user.id, user.email, user.name).catch(
             console.error
         );
+
+        // Emit USER_REGISTERED (welcome email)
+        emailEmitter.emitAsync(EmailEvent.USER_REGISTERED, {
+            email: user.email,
+            name: user.name,
+            loginUrl: `${config.clientUrl}/login`,
+        });
 
         // Bind referral to user if code is present
         if (data.referralCode) {
@@ -247,10 +255,10 @@ export class AuthService {
         });
 
         const resetLink = `${config.clientUrl}/reset-password?token=${token}`;
-        await sendEmail({
-            to: user.email,
-            subject: 'Reset Your Password',
-            html: emailTemplates.resetPassword(user.name, resetLink),
+        emailEmitter.emitAsync(EmailEvent.PASSWORD_RESET_REQUESTED, {
+            email: user.email,
+            name: user.name,
+            resetUrl: resetLink,
         });
     }
 
@@ -279,9 +287,16 @@ export class AuthService {
 
         const passwordHash = await bcrypt.hash(newPassword, 12);
 
-        await prisma.user.update({
+        const user = await prisma.user.update({
             where: { id: resetLog.userId },
             data: { passwordHash },
+            select: { email: true, name: true },
+        });
+
+        // Trigger PASSWORD_CHANGED event
+        emailEmitter.emitAsync(EmailEvent.PASSWORD_CHANGED, {
+            email: user.email,
+            name: user.name,
         });
 
         // Invalidate the token
@@ -336,10 +351,10 @@ export class AuthService {
         });
 
         const verifyLink = `${config.clientUrl}/verify-email?token=${token}`;
-        await sendEmail({
-            to: email,
-            subject: 'Verify your LenientTree email',
-            html: emailTemplates.verifyEmail(name, verifyLink),
+        emailEmitter.emitAsync(EmailEvent.USER_VERIFIED, {
+            email,
+            name,
+            verificationUrl: verifyLink,
         });
     }
 }

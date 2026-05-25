@@ -2,12 +2,18 @@ import 'dotenv/config';
 import app from './app';
 import { config } from './config/config';
 import { prisma } from './config/database';
+import { initEmailSystem } from './modules/email';
 
 const startServer = async () => {
     try {
         // Test database connection
         await prisma.$connect();
         console.log('✅ Database connected successfully');
+
+        // Initialize automated email notification system
+        await initEmailSystem().catch((err) => {
+            console.error('🔥 Failed to initialize email system:', err);
+        });
 
         const address = await app.listen({ port: config.port, host: '0.0.0.0' });
         console.log(`

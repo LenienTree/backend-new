@@ -2,7 +2,8 @@ import { Prisma, EventStatus } from '@prisma/client';
 import { prisma } from '../config/database';
 import { AppError } from '../utils/apiResponse';
 import { getPagination, buildPaginatedResult, parseDateRange } from '../utils/helpers';
-import { sendEmail, emailTemplates } from '../utils/email';
+import { emailEmitter, EmailEvent } from '../modules/email';
+import { config } from '../config/config';
 import { EventFilters } from '../types';
 
 export class EventService {
@@ -67,6 +68,20 @@ export class EventService {
             },
         });
 
+        // Query organizer details
+        const organizer = await prisma.user.findUnique({
+            where: { id: organizerId },
+            select: { name: true, email: true }
+        });
+
+        // Emit EVENT_CREATED
+        emailEmitter.emitAsync(EmailEvent.EVENT_CREATED, {
+            email: organizer?.email || '',
+            organizerName: organizer?.name || 'Organizer',
+            eventTitle: event.title,
+            dashboardUrl: `${config.clientUrl}/organizer/dashboard`
+        });
+
         return event;
     }
 
@@ -108,7 +123,10 @@ export class EventService {
     async submitForApproval(eventId: string, organizerId: string) {
         await this.verifyOwnership(eventId, organizerId);
 
-        const event = await prisma.event.findUnique({ where: { id: eventId } });
+        const event = await prisma.event.findUnique({ 
+            where: { id: eventId },
+            include: { organizer: { select: { name: true } } }
+        });
         if (!event) throw new AppError('Event not found.', 404);
 
         if (!['DRAFT', 'REJECTED'].includes(event.status)) {
@@ -118,19 +136,56 @@ export class EventService {
             );
         }
 
-        return prisma.event.update({
+        const updated = await prisma.event.update({
             where: { id: eventId },
             data: { status: 'PENDING_APPROVAL' },
         });
+
+        // Find all admins
+        const admins = await prisma.user.findMany({
+            where: { role: 'ADMIN', deletedAt: null },
+            select: { email: true, name: true }
+        });
+
+        for (const admin of admins) {
+            emailEmitter.emitAsync(EmailEvent.APPROVAL_REQUIRED, {
+                email: admin.email,
+                adminName: admin.name,
+                organizerName: event.organizer.name,
+                orgName: 'N/A',
+                eventName: event.title,
+                approvalUrl: `${config.clientUrl}/admin`
+            });
+        }
+
+        return updated;
     }
 
     async updateEvent(eventId: string, organizerId: string, data: Partial<Prisma.EventUpdateInput>) {
         await this.verifyOwnership(eventId, organizerId);
 
-        return prisma.event.update({
+        const updated = await prisma.event.update({
             where: { id: eventId },
             data,
+            include: {
+                registrations: {
+                    where: { status: { in: ['APPROVED', 'ATTENDED'] } },
+                    include: { user: { select: { email: true } } }
+                }
+            }
         });
+
+        const emails = updated.registrations.map(r => r.user.email);
+        if (emails.length > 0) {
+            emailEmitter.emitAsync(EmailEvent.EVENT_UPDATED, {
+                emails,
+                eventTitle: updated.title,
+                changeSummary: 'The event details have been updated. Please visit the portal for updated schedules.',
+                eventUrl: `${config.clientUrl}/event/${updated.id}`
+            });
+        }
+
+        return updated;
     }
 
     async uploadBanner(eventId: string, organizerId: string, bannerUrl: string) {
@@ -258,10 +313,26 @@ export class EventService {
             await this.verifyOwnership(eventId, organizerId);
         }
 
-        await prisma.event.update({
+        const event = await prisma.event.update({
             where: { id: eventId },
             data: { deletedAt: new Date() },
+            include: {
+                registrations: {
+                    where: { status: { in: ['PENDING', 'APPROVED', 'PAYMENT_PENDING', 'ATTENDED'] } },
+                    include: { user: { select: { email: true } } }
+                }
+            }
         });
+
+        // Collect all participant emails
+        const emails = event.registrations.map(r => r.user.email);
+        if (emails.length > 0) {
+            emailEmitter.emitAsync(EmailEvent.EVENT_CANCELLED, {
+                emails,
+                eventTitle: event.title,
+                reason: 'Event deleted by organizer/admin'
+            });
+        }
     }
 
     async approveEvent(eventId: string, isFeatured = false) {
@@ -281,11 +352,12 @@ export class EventService {
         });
 
         // Notify organizer
-        sendEmail({
-            to: updated.organizer.email,
-            subject: `Your event "${updated.title}" is approved!`,
-            html: emailTemplates.eventApproved(updated.organizer.name, updated.title),
-        }).catch(console.error);
+        emailEmitter.emitAsync(EmailEvent.EVENT_APPROVED, {
+            email: updated.organizer.email,
+            organizerName: updated.organizer.name,
+            eventTitle: updated.title,
+            eventUrl: `${config.clientUrl}/event/${updated.id}`
+        });
 
         return updated;
     }
@@ -306,24 +378,44 @@ export class EventService {
             },
         });
 
-        sendEmail({
-            to: updated.organizer.email,
-            subject: `Update on your event "${updated.title}"`,
-            html: emailTemplates.eventRejected(
-                updated.organizer.name,
-                updated.title,
-                reason
-            ),
-        }).catch(console.error);
+        // Notify organizer
+        emailEmitter.emitAsync(EmailEvent.EVENT_REJECTED, {
+            email: updated.organizer.email,
+            organizerName: updated.organizer.name,
+            eventTitle: updated.title,
+            reason,
+            dashboardUrl: `${config.clientUrl}/organizer/dashboard`
+        });
 
         return updated;
     }
 
     async markCompleted(eventId: string) {
-        return prisma.event.update({
+        const updated = await prisma.event.update({
             where: { id: eventId },
             data: { status: 'COMPLETED' },
+            include: {
+                registrations: {
+                    where: { status: { in: ['APPROVED', 'ATTENDED'] } },
+                    include: { user: { select: { email: true, name: true } } }
+                }
+            }
         });
+
+        for (const reg of updated.registrations) {
+            // Find if there is a certificate
+            const cert = await prisma.certificate.findUnique({
+                where: { userId_eventId: { userId: reg.userId, eventId } }
+            });
+            emailEmitter.emitAsync(EmailEvent.EVENT_COMPLETED, {
+                email: reg.user.email,
+                name: reg.user.name,
+                eventTitle: updated.title,
+                certificateUrl: cert?.certificateUrl || undefined
+            });
+        }
+
+        return updated;
     }
 
     private async verifyOwnership(eventId: string, organizerId: string) {

@@ -4,6 +4,8 @@ import { userService } from '../services/user.service';
 import { sendSuccess } from '../utils/apiResponse';
 import { AuthRequest } from '../types';
 import { prisma } from '../config/database';
+import { emailEmitter, EmailEvent } from '../modules/email';
+import { config } from '../config/config';
 
 export class AdminController {
     getDashboard = async (request: AuthRequest, reply: FastifyReply) => {
@@ -70,6 +72,24 @@ export class AdminController {
             data: { isOrganizer: true },
             select: { id: true, name: true, email: true, isOrganizer: true },
         });
+
+        // Find the audit log that requested this to extract orgName
+        const requestLog = await prisma.auditLog.findFirst({
+            where: { userId, action: 'ORGANIZER_REQUEST' },
+            orderBy: { createdAt: 'desc' }
+        });
+        const newValue = requestLog?.newValue as any;
+        const orgName = newValue?.orgName || 'N/A';
+
+        // Trigger APPROVAL_DECISION email
+        emailEmitter.emitAsync(EmailEvent.APPROVAL_DECISION, {
+            email: user.email,
+            organizerName: user.name,
+            orgName,
+            isApproved: true,
+            dashboardUrl: `${config.clientUrl}/organizer`
+        });
+
         sendSuccess(reply, user, 'Organizer approved successfully.');
     };
 }

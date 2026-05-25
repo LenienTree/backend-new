@@ -2,7 +2,8 @@ import { prisma } from '../config/database';
 import { Prisma } from '@prisma/client';
 import { AppError } from '../utils/apiResponse';
 import { getPagination, buildPaginatedResult } from '../utils/helpers';
-import { sendEmail, emailTemplates } from '../utils/email';
+import { emailEmitter, EmailEvent } from '../modules/email';
+import { config } from '../config/config';
 import crypto from 'crypto';
 
 export class RegistrationService {
@@ -112,14 +113,12 @@ export class RegistrationService {
         }) as RegistrationWithRelations;
 
         if (status === 'APPROVED') {
-            sendEmail({
-                to: registration.user.email,
-                subject: `Registered for ${registration.event.title}!`,
-                html: emailTemplates.registrationConfirmed(
-                    registration.user.name,
-                    registration.event.title
-                ),
-            }).catch(console.error);
+            emailEmitter.emitAsync(EmailEvent.REGISTRATION_CONFIRMED, {
+                email: registration.user.email,
+                name: registration.user.name,
+                eventTitle: registration.event.title,
+                dashboardUrl: `${config.clientUrl}/dashboard`
+            });
         }
 
         if (finalReferralId) {
@@ -196,11 +195,12 @@ export class RegistrationService {
             data: { status: 'APPROVED', paymentStatus: 'PAID' },
         });
 
-        sendEmail({
-            to: reg.user.email,
-            subject: `Registration approved for ${reg.event.title}!`,
-            html: emailTemplates.registrationConfirmed(reg.user.name, reg.event.title),
-        }).catch(console.error);
+        emailEmitter.emitAsync(EmailEvent.REGISTRATION_CONFIRMED, {
+            email: reg.user.email,
+            name: reg.user.name,
+            eventTitle: reg.event.title,
+            dashboardUrl: `${config.clientUrl}/dashboard`
+        });
 
         return updated;
     }
@@ -247,11 +247,12 @@ export class RegistrationService {
         });
 
         if (newStatus === 'APPROVED') {
-            sendEmail({
-                to: reg.user.email,
-                subject: `Payment confirmed for ${reg.event.title}!`,
-                html: emailTemplates.registrationConfirmed(reg.user.name, reg.event.title),
-            }).catch(console.error);
+            emailEmitter.emitAsync(EmailEvent.REGISTRATION_CONFIRMED, {
+                email: reg.user.email,
+                name: reg.user.name,
+                eventTitle: reg.event.title,
+                dashboardUrl: `${config.clientUrl}/dashboard`
+            });
         }
 
         return updated;
@@ -265,10 +266,23 @@ export class RegistrationService {
     }
 
     async markAttended(registrationId: string) {
-        return prisma.registration.update({
+        const updated = await prisma.registration.update({
             where: { id: registrationId },
             data: { status: 'ATTENDED' },
+            include: {
+                user: { select: { name: true, email: true } },
+                event: { select: { title: true } }
+            }
         });
+
+        emailEmitter.emitAsync(EmailEvent.ATTENDANCE_CONFIRMED, {
+            email: updated.user.email,
+            name: updated.user.name,
+            eventTitle: updated.event.title,
+            date: new Date().toLocaleDateString()
+        });
+
+        return updated;
     }
 }
 
