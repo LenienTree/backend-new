@@ -175,6 +175,13 @@ export class AuthService {
                     socialLinks: { create: {} },
                 },
             });
+
+            // Emit USER_REGISTERED (welcome email) for new Google signups
+            emailEmitter.emitAsync(EmailEvent.USER_REGISTERED, {
+                email: user.email,
+                name: user.name,
+                loginUrl: `${config.clientUrl}/login`,
+            });
         } else if (!user.googleId) {
             user = await prisma.user.update({
                 where: { id: user.id },
