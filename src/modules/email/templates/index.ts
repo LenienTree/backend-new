@@ -7,37 +7,44 @@ const BASE_LAYOUT = `
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{subject}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #061111; color: #e2e8f0; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
-    .wrapper { width: 100%; table-layout: fixed; background-color: #061111; padding-bottom: 40px; }
-    .container { max-width: 600px; margin: 0 auto; background-color: #0d2121; border: 1px solid #1a3d3d; border-radius: 16px; overflow: hidden; margin-top: 40px; }
-    .header { background-color: #071717; padding: 30px; text-align: center; border-bottom: 2px solid #00ff88; }
-    .header h1 { color: #ffffff; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
-    .content { padding: 40px 30px; line-height: 1.7; font-size: 16px; color: #cbd5e1; }
-    .content h2 { color: #ffffff; margin-top: 0; margin-bottom: 16px; font-size: 22px; font-weight: 700; }
-    .footer { background-color: #071717; padding: 30px; text-align: center; font-size: 13px; color: #64748b; border-top: 1px solid #1a3d3d; }
-    .footer a { color: #00ff88; text-decoration: none; }
-    .footer p { margin: 8px 0; }
-    .btn { display: inline-block; background: linear-gradient(135deg, #00ff88 0%, #00cc70 100%); color: #0a1f1f !important; font-weight: 800; padding: 14px 30px; text-decoration: none !important; border-radius: 10px; font-size: 16px; margin: 24px 0; text-align: center; box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2); }
-    .btn:hover { background: #00ff88; box-shadow: 0 4px 16px rgba(0, 255, 136, 0.4); }
-    .alert { padding: 16px; border-radius: 10px; margin: 20px 0; font-size: 15px; }
-    .alert-danger { background-color: rgba(239, 68, 68, 0.1); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.2); }
-    .alert-warning { background-color: rgba(245, 158, 11, 0.1); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.2); }
-    .alert-success { background-color: rgba(16, 185, 129, 0.1); color: #a7f3d0; border: 1px solid rgba(16, 185, 129, 0.2); }
-    .card { background-color: #061717; border: 1px solid #1a3d3d; padding: 20px; border-radius: 12px; margin: 20px 0; }
-    .grid { display: flex; flex-direction: row; justify-content: space-between; margin: 15px 0; }
-    .grid-col { flex: 1; text-align: center; }
-    .grid-val { font-size: 20px; font-weight: 700; color: #00ff88; }
-    .grid-lbl { font-size: 12px; color: #94a3b8; }
+    body { font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background-color: #040b0b; color: #e2e8f0; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+    .wrapper { width: 100%; table-layout: fixed; background-color: #040b0b; padding-bottom: 40px; }
+    .container { max-width: 600px; margin: 0 auto; background-color: #081414; border: 1px solid #142e2e; border-radius: 20px; overflow: hidden; margin-top: 40px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
+    .header { background: linear-gradient(180deg, #071717 0%, #081414 100%); padding: 35px 30px; text-align: center; border-bottom: 1px solid #142e2e; position: relative; }
+    .header img { max-width: 80px; height: auto; margin-bottom: 12px; display: inline-block; filter: drop-shadow(0 0 15px rgba(0, 255, 136, 0.3)); }
+    .header h1 { color: #ffffff; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(to right, #ffffff, #00ff88); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .content { padding: 40px 30px; line-height: 1.8; font-size: 16px; color: #cbd5e1; }
+    .content h2 { color: #ffffff; margin-top: 0; margin-bottom: 18px; font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+    .footer { background-color: #050d0d; padding: 30px; text-align: center; font-size: 13px; color: #64748b; border-top: 1px solid #142e2e; }
+    .footer a { color: #00ff88; text-decoration: none; font-weight: 600; }
+    .footer a:hover { text-decoration: underline; }
+    .footer p { margin: 8px 0; line-height: 1.5; }
+    .btn { display: inline-block; background: linear-gradient(135deg, #00ff88 0%, #00cc70 100%); color: #050d0d !important; font-weight: 800; padding: 14px 32px; text-decoration: none !important; border-radius: 12px; font-size: 16px; margin: 24px 0; text-align: center; letter-spacing: 0.5px; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 20px rgba(0, 255, 136, 0.3); }
+    .btn:hover { box-shadow: 0 6px 24px rgba(0, 255, 136, 0.5); }
+    .alert { padding: 18px; border-radius: 12px; margin: 24px 0; font-size: 15px; font-weight: 500; line-height: 1.6; border-left: 4px solid transparent; }
+    .alert-danger { background-color: rgba(239, 68, 68, 0.08); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.15); border-left-color: #ef4444; }
+    .alert-warning { background-color: rgba(245, 158, 11, 0.08); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.15); border-left-color: #f59e0b; }
+    .alert-success { background-color: rgba(16, 185, 129, 0.08); color: #a7f3d0; border: 1px solid rgba(16, 185, 129, 0.15); border-left-color: #10b981; }
+    .card { background-color: #061212; border: 1px solid #142e2e; padding: 22px; border-radius: 14px; margin: 24px 0; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2); }
+    .grid { display: flex; flex-direction: row; justify-content: space-between; margin: 20px 0; }
+    .grid-col { flex: 1; text-align: center; padding: 10px; border-right: 1px solid #142e2e; }
+    .grid-col:last-child { border-right: none; }
+    .grid-val { font-size: 22px; font-weight: 800; color: #00ff88; margin-bottom: 4px; }
+    .grid-lbl { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
     ul { padding-left: 20px; }
-    li { margin-bottom: 8px; }
+    li { margin-bottom: 10px; }
   </style>
 </head>
 <body>
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <h1>🌳 LenientTree</h1>
+        <img src="https://lenienttree.com/logo1.png" alt="LenientTree Logo" onerror="this.style.display='none'">
+        <h1>LenientTree</h1>
       </div>
       <div class="content">
         {{{body}}}

@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { authService } from '../services/auth.service';
-import { sendSuccess, sendCreated } from '../utils/apiResponse';
+import { AppError, sendSuccess, sendCreated } from '../utils/apiResponse';
 import { AuthRequest } from '../types';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -66,7 +66,7 @@ export class AuthController {
         const refreshToken = request.cookies?.refreshToken || (request.body as any)?.refreshToken;
 
         if (!refreshToken) {
-            throw new Error('No refresh token provided');
+            throw new AppError('No refresh token provided', 401);
         }
 
         const result = await authService.refreshTokens(refreshToken);
