@@ -259,10 +259,22 @@ export class RegistrationService {
     }
 
     async getUserRegistrationStatus(eventId: string, userId: string) {
-        return prisma.registration.findUnique({
+        const registration = await prisma.registration.findUnique({
             where: { eventId_userId: { eventId, userId } },
             select: { id: true, status: true, paymentStatus: true, registeredAt: true },
         });
+
+        const bookmark = await prisma.bookmark.findUnique({
+            where: { userId_eventId: { userId, eventId } },
+        });
+
+        return {
+            isRegistered: !!registration,
+            status: registration?.status || null,
+            paymentStatus: registration?.paymentStatus || null,
+            registeredAt: registration?.registeredAt || null,
+            isBookmarked: !!bookmark,
+        };
     }
 
     async markAttended(registrationId: string) {
