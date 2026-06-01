@@ -14,7 +14,16 @@ export default async function authRoutes(fastify: FastifyInstance) {
     fastify.post('/register', { preHandler: validate(registerSchema) }, authController.register);
 
     // POST /api/auth/login
-    fastify.post('/login', { preHandler: validate(loginSchema) }, authController.login);
+    fastify.post(
+        '/login',
+        {
+            config: {
+                rateLimit: false,
+            },
+            preHandler: validate(loginSchema),
+        },
+        authController.login
+    );
 
     // POST /api/auth/google
     fastify.post('/google', authController.googleAuth);
