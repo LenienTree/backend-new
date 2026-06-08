@@ -2,7 +2,7 @@ import fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import cookie from '@fastify/cookie';
-import compress from '@fastify/compress';
+// @fastify/compress removed — gzip handled by Nginx (avoids premature close stream conflict)
 import rateLimit from '@fastify/rate-limit';
 import formbody from '@fastify/formbody';
 import multipart from '@fastify/multipart';
@@ -76,7 +76,7 @@ app.register(multipart, {
     },
 });
 
-app.register(compress, { global: true });
+// Compression is handled by Nginx (gzip_proxied, gzip_types) — not at the Node.js layer
 
 // Rate Limiting
 // WARNING: default in-memory store is per-process — in PM2 cluster mode each worker
