@@ -76,10 +76,13 @@ app.register(multipart, {
     },
 });
 
-// Response Compression disabled temporarily
-// app.register(compress, { global: true });
+app.register(compress, { global: true });
 
 // Rate Limiting
+// WARNING: default in-memory store is per-process — in PM2 cluster mode each worker
+// tracks limits independently, making the effective limit (max × workers).
+// To enforce a true global limit, add Redis: npm i @fastify/redis ioredis
+// and pass `redis: redisClient` here. Acceptable trade-off on free-tier infra.
 app.register(rateLimit, {
     max: config.rateLimit.max,
     timeWindow: config.rateLimit.windowMs,

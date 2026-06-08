@@ -6,7 +6,9 @@ import { EmailOptions, TemplateContexts } from '../types';
 import { emailConfig } from '../config';
 import { prisma } from '../../../config/database';
 
-// Simple in-memory cache to prevent duplicate email sends within 10 seconds (idempotency key)
+// In-memory dedup cache — guards against duplicate sends within a single worker process.
+// In PM2 cluster mode each worker has its own cache, so cross-worker dedup is NOT guaranteed.
+// To fix cross-worker duplicates properly, replace this Map with a shared Redis store.
 const sentEmailsCache = new Map<string, number>();
 const CACHE_TTL_MS = 10000; // 10 seconds
 

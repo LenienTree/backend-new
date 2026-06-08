@@ -13,12 +13,15 @@ export default async function authRoutes(fastify: FastifyInstance) {
     // POST /api/auth/register
     fastify.post('/register', { preHandler: validate(registerSchema) }, authController.register);
 
-    // POST /api/auth/login
+    // POST /api/auth/login — stricter rate limit to prevent brute-force
     fastify.post(
         '/login',
         {
             config: {
-                rateLimit: false,
+                rateLimit: {
+                    max: 10,
+                    timeWindow: '15 minutes',
+                },
             },
             preHandler: validate(loginSchema),
         },

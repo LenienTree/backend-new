@@ -1,19 +1,29 @@
+const isProduction = process.env.NODE_ENV === 'production';
+
+const requireSecret = (key: string, fallback: string): string => {
+    const value = process.env[key];
+    if (!value) {
+        if (isProduction) throw new Error(`Missing required environment variable: ${key}`);
+        return fallback;
+    }
+    return value;
+};
+
 export const config = {
     env: process.env.NODE_ENV || 'development',
     port: parseInt(process.env.PORT || '5000', 10),
     clientUrl: process.env.CLIENT_URL || 'http://localhost:3000',
 
     jwt: {
-        secret: process.env.JWT_SECRET || 'fallback_secret_dev_only',
+        secret: requireSecret('JWT_SECRET', 'fallback_secret_dev_only'),
         expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-        refreshSecret:
-            process.env.JWT_REFRESH_SECRET || 'fallback_refresh_secret_dev_only',
+        refreshSecret: requireSecret('JWT_REFRESH_SECRET', 'fallback_refresh_secret_dev_only'),
         refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
     },
 
     rateLimit: {
-        windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
-        max: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
+        windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
+        max: parseInt(process.env.RATE_LIMIT_MAX || '60', 10),
     },
 
     pagination: {

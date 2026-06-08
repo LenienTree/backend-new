@@ -27,8 +27,14 @@ export const initEmailSystem = async (): Promise<void> => {
         }
     });
 
-    // 4. Start background cron jobs/schedulers
-    startSchedulers();
+    // 4. Start background cron jobs/schedulers — only on PM2 worker 0 (or non-clustered)
+    // Without this guard, each PM2 worker fires every cron independently (N workers = N× emails)
+    const workerId = process.env.NODE_APP_INSTANCE;
+    if (workerId === undefined || workerId === '0') {
+        startSchedulers();
+    } else {
+        console.log(`⏭️  [Email] Skipping schedulers on worker ${workerId} (handled by worker 0)`);
+    }
 
     console.log('✅ [Email] Centralized Email Module initialized successfully');
 };

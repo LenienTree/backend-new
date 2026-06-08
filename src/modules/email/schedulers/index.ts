@@ -79,11 +79,13 @@ export const startSchedulers = (): void => {
                 select: { id: true, email: true, name: true },
             });
 
-            for (const user of activeUsers) {
+            // Limit to 500 per run to avoid SMTP storm — re-runs daily so remainder is caught next day
+            const capped = activeUsers.slice(0, 500);
+            for (const user of capped) {
                 emailEmitter.emitAsync(EmailEvent.STREAK_WARNING, {
                     email: user.email,
                     name: user.name,
-                    streakDays: 5, // Simulated streak count based on past actions
+                    streakDays: 5,
                     daysRemaining: 1,
                 });
             }
@@ -110,22 +112,31 @@ export const startSchedulers = (): void => {
                 points: u._count.registrations * 100, // Proxy points
             }));
 
-            // Find all active users to email the digest
-            const users = await prisma.user.findMany({
-                where: { deletedAt: null },
-                select: { email: true, name: true, _count: { select: { registrations: true } } },
-            });
-
-            users.forEach((user, idx) => {
-                const userPoints = user._count.registrations * 100;
-                emailEmitter.emitAsync(EmailEvent.WEEKLY_LEADERBOARD_SUMMARY, {
-                    email: user.email,
-                    name: user.name,
-                    rank: idx + 1,
-                    totalPoints: userPoints,
-                    topPerformers,
+            // Paginate users in batches to avoid loading all records into memory at once
+            const BATCH_SIZE = 100;
+            let cursor: string | undefined;
+            let globalRank = 1;
+            while (true) {
+                const batch = await prisma.user.findMany({
+                    where: { deletedAt: null },
+                    select: { id: true, email: true, name: true, _count: { select: { registrations: true } } },
+                    orderBy: { id: 'asc' },
+                    take: BATCH_SIZE,
+                    ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
                 });
-            });
+                if (batch.length === 0) break;
+                for (const user of batch) {
+                    emailEmitter.emitAsync(EmailEvent.WEEKLY_LEADERBOARD_SUMMARY, {
+                        email: user.email,
+                        name: user.name,
+                        rank: globalRank++,
+                        totalPoints: user._count.registrations * 100,
+                        topPerformers,
+                    });
+                }
+                cursor = batch[batch.length - 1].id;
+                if (batch.length < BATCH_SIZE) break;
+            }
         } catch (err) {
             console.error('[Scheduler] Error running global leaderboard digest:', err);
         }
