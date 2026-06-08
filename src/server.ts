@@ -38,14 +38,16 @@ const startServer = async () => {
         process.on('SIGTERM', () => shutdown('SIGTERM'));
         process.on('SIGINT', () => shutdown('SIGINT'));
 
-        // Unhandled errors
-        process.on('unhandledRejection', (reason, promise) => {
-            console.error('🔥 Unhandled Rejection at:', promise, 'reason:', reason);
-            shutdown('unhandledRejection');
+        // Unhandled async rejection — log only, do NOT shut down.
+        // Calling shutdown() here kills the server mid-request on any transient error
+        // (DB cold-start, network blip, etc.), causing 502s and broken JSON responses.
+        process.on('unhandledRejection', (reason) => {
+            console.error('⚠️  Unhandled Rejection (non-fatal):', reason);
         });
 
+        // Uncaught synchronous exception — this IS fatal, shut down cleanly.
         process.on('uncaughtException', (error) => {
-            console.error('🔥 Uncaught Exception:', error);
+            console.error('🔥 Uncaught Exception (fatal):', error);
             shutdown('uncaughtException');
         });
     } catch (error) {
