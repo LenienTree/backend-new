@@ -59,8 +59,7 @@ export class AuthController {
 
         setAuthCookies(reply, result.accessToken, result.refreshToken);
 
-        const { accessToken, refreshToken, ...responseWithoutTokens } = result;
-        sendSuccess(reply, responseWithoutTokens, 'Google login successful');
+        sendSuccess(reply, result, 'Google login successful');
     };
 
     refreshToken = async (request: FastifyRequest, reply: FastifyReply) => {

@@ -32,6 +32,9 @@ export default async function adminRoutes(fastify: FastifyInstance) {
     // PUT /api/admin/events/:id/featured
     fastify.put('/events/:id/featured', adminController.toggleFeatured);
 
+    // PUT /api/admin/events/:id/premium
+    fastify.put('/events/:id/premium', adminController.togglePremium);
+
     // GET /api/admin/users
     fastify.get('/users', adminController.getAllUsers);
 

@@ -84,9 +84,10 @@ export class EventService {
             customFormFields?: unknown;
             paymentType?: string;
             upiId?: string;
-        }
+        },
+        role?: string
     ) {
-        await this.verifyOwnership(eventId, organizerId);
+        await this.verifyOwnership(eventId, organizerId, role);
 
         const { designConfig, ...rest } = data;
 
@@ -105,8 +106,8 @@ export class EventService {
         });
     }
 
-    async submitForApproval(eventId: string, organizerId: string) {
-        await this.verifyOwnership(eventId, organizerId);
+    async submitForApproval(eventId: string, organizerId: string, role?: string) {
+        await this.verifyOwnership(eventId, organizerId, role);
 
         const event = await prisma.event.findUnique({ where: { id: eventId } });
         if (!event) throw new AppError('Event not found.', 404);
@@ -124,17 +125,19 @@ export class EventService {
         });
     }
 
-    async updateEvent(eventId: string, organizerId: string, data: Partial<Prisma.EventUpdateInput>) {
-        await this.verifyOwnership(eventId, organizerId);
+    async updateEvent(eventId: string, organizerId: string, data: Partial<Prisma.EventUpdateInput>, role?: string) {
+        await this.verifyOwnership(eventId, organizerId, role);
+
+        const { isPremium, isFeatured, ...updateData } = data as any;
 
         return prisma.event.update({
             where: { id: eventId },
-            data,
+            data: updateData,
         });
     }
 
-    async uploadBanner(eventId: string, organizerId: string, bannerUrl: string) {
-        await this.verifyOwnership(eventId, organizerId);
+    async uploadBanner(eventId: string, organizerId: string, bannerUrl: string, role?: string) {
+        await this.verifyOwnership(eventId, organizerId, role);
         return prisma.event.update({
             where: { id: eventId },
             data: { bannerImage: bannerUrl },
@@ -142,8 +145,8 @@ export class EventService {
         });
     }
 
-    async uploadPoster(eventId: string, organizerId: string, posterUrl: string) {
-        await this.verifyOwnership(eventId, organizerId);
+    async uploadPoster(eventId: string, organizerId: string, posterUrl: string, role?: string) {
+        await this.verifyOwnership(eventId, organizerId, role);
         return prisma.event.update({
             where: { id: eventId },
             data: { eventPoster: posterUrl },
@@ -151,8 +154,8 @@ export class EventService {
         });
     }
 
-    async uploadUpiQrCode(eventId: string, organizerId: string, qrCodeUrl: string) {
-        await this.verifyOwnership(eventId, organizerId);
+    async uploadUpiQrCode(eventId: string, organizerId: string, qrCodeUrl: string, role?: string) {
+        await this.verifyOwnership(eventId, organizerId, role);
         return prisma.event.update({
             where: { id: eventId },
             data: { upiQrCode: qrCodeUrl },
@@ -207,6 +210,7 @@ export class EventService {
                     venueName: true,
                     maxParticipants: true,
                     isFeatured: true,
+                    isPremium: true,
                     registrationType: true,
                     minTeamSize: true,
                     maxTeamSize: true,
@@ -254,9 +258,7 @@ export class EventService {
     }
 
     async softDeleteEvent(eventId: string, organizerId: string, role: string) {
-        if (role !== 'ADMIN') {
-            await this.verifyOwnership(eventId, organizerId);
-        }
+        await this.verifyOwnership(eventId, organizerId, role);
 
         await prisma.event.update({
             where: { id: eventId },
@@ -264,7 +266,7 @@ export class EventService {
         });
     }
 
-    async approveEvent(eventId: string, isFeatured = false) {
+    async approveEvent(eventId: string, isFeatured = false, isPremium = false) {
         const event = await prisma.event.findUnique({ where: { id: eventId } });
         if (!event) throw new AppError('Event not found.', 404);
 
@@ -274,7 +276,7 @@ export class EventService {
 
         const updated = await prisma.event.update({
             where: { id: eventId },
-            data: { status: 'APPROVED', isFeatured },
+            data: { status: 'APPROVED', isFeatured, isPremium },
             include: {
                 organizer: { select: { name: true, email: true } },
             },
@@ -326,13 +328,13 @@ export class EventService {
         });
     }
 
-    private async verifyOwnership(eventId: string, organizerId: string) {
+    private async verifyOwnership(eventId: string, organizerId: string, role?: string) {
         const event = await prisma.event.findUnique({
             where: { id: eventId, deletedAt: null },
         });
 
         if (!event) throw new AppError('Event not found.', 404);
-        if (event.organizerId !== organizerId) {
+        if (role !== 'ADMIN' && event.organizerId !== organizerId) {
             throw new AppError('You are not authorized to modify this event.', 403);
         }
 
