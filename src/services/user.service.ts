@@ -16,6 +16,7 @@ export class UserService {
                 isOrganizer: true,
                 college: true,
                 graduationYear: true,
+                dateOfBirth: true,
                 bio: true,
                 profileImage: true,
                 status: true,
@@ -89,14 +90,19 @@ export class UserService {
             };
             internshipInterest?: boolean;
             internshipDomains?: string[];
+            dateOfBirth?: Date | string;
         }
     ) {
         const { skills, socialLinks, ...profileData } = data;
+        const mappedData: any = { ...profileData };
+        if (mappedData.dateOfBirth) {
+            mappedData.dateOfBirth = new Date(mappedData.dateOfBirth);
+        }
 
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: {
-                ...profileData,
+                ...mappedData,
                 ...(skills && {
                     skills: {
                         deleteMany: {},
@@ -124,6 +130,7 @@ export class UserService {
                 skills: { select: { skill: true } },
                 internshipInterest: true,
                 internshipDomains: true,
+                dateOfBirth: true,
             },
         });
 

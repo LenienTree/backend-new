@@ -18,6 +18,7 @@ model User {
   isOrganizer     Boolean        @default(false)
   college         String?
   graduationYear  Int?
+  dateOfBirth     DateTime?
   bio             String?
   profileImage    String?
   status          UserStatus     @default(ACTIVE)
