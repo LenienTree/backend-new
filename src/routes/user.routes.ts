@@ -20,30 +20,30 @@ export default async function userRoutes(fastify: FastifyInstance) {
     // PUT /api/users/me
     fastify.put('/me', { preHandler: validate(updateProfileSchema) }, userController.updateProfile);
 
-    // POST /api/users/profile-image
+    // POST /api/users/profile-image (Original) & POST /api/users/me/avatar (Frontend alias)
     fastify.post('/profile-image', userController.uploadProfileImage);
     fastify.post('/me/avatar', userController.uploadProfileImage);
 
-    // POST /api/users/gallery
+    // POST /api/users/gallery (Original) & POST /api/users/me/gallery (Frontend alias)
     fastify.post('/gallery', userController.addGalleryImage);
     fastify.post('/me/gallery', userController.addGalleryImage);
 
-    // DELETE /api/users/gallery/:imageId
+    // DELETE /api/users/gallery/:imageId (Original) & DELETE /api/users/me/gallery/:imageId (Frontend alias)
     fastify.delete('/gallery/:imageId', userController.deleteGalleryImage);
     fastify.delete('/me/gallery/:imageId', userController.deleteGalleryImage);
 
-    // POST /api/users/change-password
+    // POST /api/users/change-password (Original) & PUT /api/users/me/password (Frontend alias)
     fastify.post('/change-password', { preHandler: validate(changePasswordSchema) }, userController.changePassword);
     fastify.put('/me/password', { preHandler: validate(changePasswordSchema) }, userController.changePassword);
 
     // POST /api/users/me/become-organizer
     fastify.post('/me/become-organizer', { preHandler: validate(becomeOrganizerSchema) }, userController.becomeOrganizer);
 
-    // GET /api/users/my-events
+    // GET /api/users/my-events (Original) & GET /api/users/me/events (Frontend alias)
     fastify.get('/my-events', userController.getMyEvents);
     fastify.get('/me/events', userController.getMyEvents);
 
-    // GET /api/users/certificates
+    // GET /api/users/certificates (Original) & GET /api/users/me/certificates (Frontend alias)
     fastify.get('/certificates', userController.getCertificates);
     fastify.get('/me/certificates', userController.getCertificates);
 }

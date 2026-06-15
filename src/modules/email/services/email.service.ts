@@ -81,7 +81,7 @@ export class EmailService {
                 attachments,
             });
         } catch (error) {
-            console.error(`[Email] Failed to compile and send templated email (${templateName}):`, error);
+            console.error('[Email] Failed to compile and send templated email.');
             // Log a system failure in case of template issues
             this.logSystemFailure(templateName, error).catch(console.error);
             throw error;

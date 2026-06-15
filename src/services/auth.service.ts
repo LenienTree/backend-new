@@ -55,6 +55,8 @@ export class AuthService {
                 isEmailVerified: true,
                 profileImage: true,
                 createdAt: true,
+                internshipInterest: true,
+                internshipDomains: true,
             },
         });
 
@@ -124,6 +126,8 @@ export class AuthService {
                 status: true,
                 isEmailVerified: true,
                 profileImage: true,
+                internshipInterest: true,
+                internshipDomains: true,
             },
         });
 
@@ -208,6 +212,8 @@ export class AuthService {
                 role: user.role,
                 isOrganizer: user.isOrganizer,
                 profileImage: user.profileImage,
+                internshipInterest: user.internshipInterest,
+                internshipDomains: user.internshipDomains,
             },
             accessToken: generateAccessToken(payload),
             refreshToken: generateRefreshToken(payload),

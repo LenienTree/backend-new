@@ -23,6 +23,7 @@ export class AnnouncementController {
         const ann = await announcementService.update(
             (request.params as any).announcementId as string,
             request.user!.userId,
+            request.user!.role,
             request.body as any
         );
         sendSuccess(reply, ann, 'Announcement updated');
@@ -58,6 +59,7 @@ export class FAQController {
         const faq = await faqService.update(
             (request.params as any).faqId as string,
             request.user!.userId,
+            request.user!.role,
             request.body as any
         );
         sendSuccess(reply, faq, 'FAQ updated');

@@ -23,6 +23,8 @@ model User {
   status          UserStatus     @default(ACTIVE)
   isEmailVerified Boolean        @default(false)
   googleId        String?        @unique
+  internshipInterest Boolean?
+  internshipDomains  String[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   deletedAt       DateTime?
@@ -107,6 +109,7 @@ model Event {
   customFormFields     Json?
   rejectionReason      String?
   isFeatured           Boolean        @default(false)
+  isPremium            Boolean        @default(false)
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
   deletedAt            DateTime?

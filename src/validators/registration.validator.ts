@@ -27,6 +27,7 @@ export const approveRejectRegistrationSchema = z.object({
 
 export const adminApproveEventSchema = z.object({
     isFeatured: z.boolean().optional(),
+    isPremium: z.boolean().optional(),
 });
 
 export const adminRejectEventSchema = z.object({

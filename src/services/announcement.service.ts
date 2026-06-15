@@ -39,10 +39,15 @@ export class AnnouncementService {
         });
     }
 
-    async update(id: string, requesterId: string, data: { title?: string; content?: string }) {
-        const ann = await prisma.announcement.findUnique({ where: { id } });
+    async update(id: string, requesterId: string, requesterRole: string, data: { title?: string; content?: string }) {
+        const ann = await prisma.announcement.findUnique({
+            where: { id },
+            include: { event: { select: { organizerId: true } } },
+        });
         if (!ann) throw new AppError('Announcement not found.', 404);
-        if (ann.createdBy !== requesterId) {
+
+        const isOwner = ann.createdBy === requesterId || ann.event.organizerId === requesterId;
+        if (!isOwner && requesterRole !== 'ADMIN') {
             throw new AppError('Not authorized to edit this announcement.', 403);
         }
         return prisma.announcement.update({ where: { id }, data });
@@ -87,13 +92,13 @@ export class FAQService {
         });
     }
 
-    async update(id: string, requesterId: string, data: { question?: string; answer?: string }) {
+    async update(id: string, requesterId: string, requesterRole: string, data: { question?: string; answer?: string }) {
         const faq = await prisma.fAQ.findUnique({
             where: { id },
             include: { event: { select: { organizerId: true } } },
         });
         if (!faq) throw new AppError('FAQ not found.', 404);
-        if (faq.event.organizerId !== requesterId) {
+        if (faq.event.organizerId !== requesterId && requesterRole !== 'ADMIN') {
             throw new AppError('Not authorized.', 403);
         }
         return prisma.fAQ.update({ where: { id }, data });
