@@ -24,6 +24,8 @@ export class UserService {
                 isEmailVerified: true,
                 createdAt: true,
                 socialLinks: true,
+                internshipInterest: true,
+                internshipDomains: true,
                 skills: { select: { skill: true } },
                 galleryImages: true,
                 certificates: {
@@ -87,6 +89,8 @@ export class UserService {
                 twitter?: string;
                 website?: string;
             };
+            internshipInterest?: boolean;
+            internshipDomains?: string[];
         }
     ) {
         const { skills, socialLinks, ...profileData } = data;
@@ -120,6 +124,8 @@ export class UserService {
                 graduationYear: true,
                 socialLinks: true,
                 skills: { select: { skill: true } },
+                internshipInterest: true,
+                internshipDomains: true,
             },
         });
 

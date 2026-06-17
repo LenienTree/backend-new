@@ -15,7 +15,8 @@ export class EventController {
         const event = await eventService.updateEventDesign(
             (request.params as any).id as string,
             request.user!.userId,
-            request.body as any
+            request.body as any,
+            request.user!.role
         );
         sendSuccess(reply, event, 'Event design updated');
     };
@@ -23,7 +24,8 @@ export class EventController {
     submitForApproval = async (request: AuthRequest, reply: FastifyReply) => {
         const event = await eventService.submitForApproval(
             (request.params as any).id as string,
-            request.user!.userId
+            request.user!.userId,
+            request.user!.role
         );
         sendSuccess(reply, event, 'Event submitted for approval');
     };
@@ -32,7 +34,8 @@ export class EventController {
         const event = await eventService.updateEvent(
             (request.params as any).id as string,
             request.user!.userId,
-            request.body as any
+            request.body as any,
+            request.user!.role
         );
         sendSuccess(reply, event, 'Event updated');
     };
@@ -46,7 +49,8 @@ export class EventController {
         const event = await eventService.uploadBanner(
             (request.params as any).id as string,
             request.user!.userId,
-            result.secure_url
+            result.secure_url,
+            request.user!.role
         );
         sendSuccess(reply, event, 'Banner uploaded');
     };
@@ -60,7 +64,8 @@ export class EventController {
         const event = await eventService.uploadPoster(
             (request.params as any).id as string,
             request.user!.userId,
-            result.secure_url
+            result.secure_url,
+            request.user!.role
         );
         sendSuccess(reply, event, 'Poster uploaded');
     };
@@ -74,7 +79,8 @@ export class EventController {
         const event = await eventService.uploadUpiQrCode(
             (request.params as any).id as string,
             request.user!.userId,
-            result.secure_url
+            result.secure_url,
+            request.user!.role
         );
         sendSuccess(reply, event, 'UPI QR Code uploaded');
     };
@@ -108,10 +114,11 @@ export class EventController {
     };
 
     approveEvent = async (request: AuthRequest, reply: FastifyReply) => {
-        const { isFeatured } = request.body as any;
+        const { isFeatured, isPremium } = request.body as any;
         const event = await eventService.approveEvent(
             (request.params as any).id as string,
-            isFeatured
+            isFeatured,
+            isPremium
         );
         sendSuccess(reply, event, 'Event approved');
     };

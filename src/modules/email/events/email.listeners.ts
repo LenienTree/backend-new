@@ -39,7 +39,7 @@ export const registerEmailListeners = (): void => {
                 'Reset Your LenientTree Password 🔒'
             );
         } catch (err) {
-            console.error('[Email] Failed to process PASSWORD_RESET_REQUESTED event:', err);
+            console.error('[Email] Failed to process PASSWORD_RESET_REQUESTED event.');
         }
     });
 
@@ -52,7 +52,7 @@ export const registerEmailListeners = (): void => {
                 'Password Updated Successfully ✅'
             );
         } catch (err) {
-            console.error('[Email] Failed to process PASSWORD_CHANGED event:', err);
+            console.error('[Email] Failed to process PASSWORD_CHANGED event.');
         }
     });
 

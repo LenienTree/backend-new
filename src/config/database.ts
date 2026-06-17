@@ -5,8 +5,18 @@ import { PrismaClient } from '@prisma/client';
 // Without it, Prisma's default 10-connection pool is the concurrency ceiling.
 if (process.env.NODE_ENV === 'production') {
     const dbUrl = process.env.DATABASE_URL ?? '';
-    const isNeonPooler = dbUrl.includes('-pooler');
-    const isSupabasePooler = dbUrl.includes('pooler.supabase.com') || dbUrl.includes('pgbouncer=true');
+    let isNeonPooler = false;
+    let isSupabasePooler = false;
+    try {
+        const parsedDbUrl = new URL(dbUrl);
+        isNeonPooler = parsedDbUrl.hostname.includes('-pooler');
+        isSupabasePooler =
+            parsedDbUrl.port === '6543' ||
+            parsedDbUrl.searchParams.get('pgbouncer') === 'true';
+    } catch {
+        isNeonPooler = dbUrl.includes('-pooler');
+        isSupabasePooler = dbUrl.includes('pgbouncer=true');
+    }
     if (!isNeonPooler && !isSupabasePooler) {
         console.warn(
             '⚠️  [DB] DATABASE_URL does not use a connection pooler. ' +

@@ -178,6 +178,17 @@ export class AdminService {
         });
     }
 
+    async togglePremiumEvent(eventId: string, isPremium: boolean) {
+        const event = await prisma.event.findUnique({ where: { id: eventId } });
+        if (!event) throw new AppError('Event not found.', 404);
+
+        return prisma.event.update({
+            where: { id: eventId },
+            data: { isPremium },
+            select: { id: true, title: true, isPremium: true },
+        });
+    }
+
     async getOrganizerDashboard(organizerId: string) {
         const events = await prisma.event.findMany({
             where: { organizerId, deletedAt: null },

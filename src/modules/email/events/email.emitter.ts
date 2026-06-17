@@ -8,8 +8,8 @@ class EmailEventEmitter extends EventEmitter {
         setImmediate(() => {
             try {
                 this.emit(event, ...args);
-            } catch (err) {
-                console.error(`[Email] Listener crashed for event: ${event}`, err);
+            } catch {
+                console.error('[Email] Listener crashed while processing an event.');
             }
         });
         return true;

@@ -17,6 +17,8 @@ export const updateProfileSchema = z.object({
         })
         .nullable()
         .optional(),
+    internshipInterest: z.boolean().nullable().optional(),
+    internshipDomains: z.array(z.string()).optional(),
 });
 
 export const addGalleryImageSchema = z.object({

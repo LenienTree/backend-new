@@ -64,6 +64,15 @@ export class AdminController {
         sendSuccess(reply, event);
     };
 
+    togglePremium = async (request: AuthRequest, reply: FastifyReply) => {
+        const { isPremium } = request.body as any;
+        const event = await adminService.togglePremiumEvent(
+            (request.params as any).id as string,
+            isPremium
+        );
+        sendSuccess(reply, event);
+    };
+
     approveOrganizer = async (request: AuthRequest, reply: FastifyReply) => {
         const userId = (request.params as any).id as string;
         // Grant the organizer role
