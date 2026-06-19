@@ -2,6 +2,8 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '../config/database';
 import { AppError } from '../utils/apiResponse';
 import { getPagination, buildPaginatedResult } from '../utils/helpers';
+import { emailEmitter, EmailEvent } from '../modules/email';
+import { config } from '../config/config';
 
 export class UserService {
     async getMe(userId: string) {
@@ -184,7 +186,17 @@ export class UserService {
         if (!isValid) throw new AppError('Current password is incorrect.', 400);
 
         const passwordHash = await bcrypt.hash(newPassword, 12);
-        await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: { passwordHash },
+            select: { email: true, name: true }
+        });
+
+        // Trigger PASSWORD_CHANGED event
+        emailEmitter.emitAsync(EmailEvent.PASSWORD_CHANGED, {
+            email: updatedUser.email,
+            name: updatedUser.name
+        });
     }
 
     async becomeOrganizer(userId: string, data: { orgName?: string; orgEmail?: string; eventName?: string }) {
@@ -216,6 +228,29 @@ export class UserService {
                 newValue: data as object,
             },
         });
+
+        // Query requester info
+        const requester = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { name: true, email: true }
+        });
+
+        // Notify Admins
+        const admins = await prisma.user.findMany({
+            where: { role: 'ADMIN', deletedAt: null },
+            select: { email: true, name: true }
+        });
+
+        for (const admin of admins) {
+            emailEmitter.emitAsync(EmailEvent.APPROVAL_REQUIRED, {
+                email: admin.email,
+                adminName: admin.name,
+                organizerName: requester?.name || requester?.email || 'User',
+                orgName: data.orgName || 'N/A',
+                eventName: data.eventName || 'N/A',
+                approvalUrl: `${config.clientUrl}/admin`
+            });
+        }
 
         return { requested: true };
     }

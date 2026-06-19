@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { authController } from '../controllers/auth.controller';
 import { validate } from '../middleware/validate.middleware';
+import { authenticate } from '../middleware/auth.middleware';
 import {
     registerSchema,
     loginSchema,
@@ -12,8 +13,20 @@ export default async function authRoutes(fastify: FastifyInstance) {
     // POST /api/auth/register
     fastify.post('/register', { preHandler: validate(registerSchema) }, authController.register);
 
-    // POST /api/auth/login
-    fastify.post('/login', { preHandler: validate(loginSchema) }, authController.login);
+    // POST /api/auth/login — stricter rate limit to prevent brute-force
+    fastify.post(
+        '/login',
+        {
+            config: {
+                rateLimit: {
+                    max: 10,
+                    timeWindow: '15 minutes',
+                },
+            },
+            preHandler: validate(loginSchema),
+        },
+        authController.login
+    );
 
     // POST /api/auth/google
     fastify.post('/google', authController.googleAuth);
@@ -39,8 +52,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     fastify.get('/verify-email', authController.verifyEmail);
 
     // GET /api/auth/me (protected)
-    // Note: authenticate middleware needs to be converted too
-    fastify.get('/me', authController.getMe);
+    fastify.get('/me', { preHandler: authenticate }, authController.getMe);
 
     // POST /api/auth/logout
     fastify.post('/logout', authController.logout);

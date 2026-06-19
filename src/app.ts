@@ -2,7 +2,7 @@ import fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import cookie from '@fastify/cookie';
-import compress from '@fastify/compress';
+// @fastify/compress removed — gzip handled by Nginx (avoids premature close stream conflict)
 import rateLimit from '@fastify/rate-limit';
 import formbody from '@fastify/formbody';
 import multipart from '@fastify/multipart';
@@ -46,7 +46,15 @@ const allowedOrigins = [
 
 app.register(cors, {
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (!origin) {
+            callback(null, true);
+            return;
+        }
+
+        const isAllowed = allowedOrigins.includes(origin) || 
+            /^https:\/\/[a-zA-Z0-9-._]+\.vercel\.app$/.test(origin);
+
+        if (isAllowed) {
             callback(null, true);
         } else {
             callback(new Error(`CORS: origin '${origin}' is not allowed`), false);
@@ -68,13 +76,47 @@ app.register(multipart, {
     },
 });
 
-// Response Compression disabled temporarily
-// app.register(compress, { global: true });
+// Compression is handled by Nginx (gzip_proxied, gzip_types) — not at the Node.js layer
 
 // Rate Limiting
+// WARNING: default in-memory store is per-process — in PM2 cluster mode each worker
+// tracks limits independently, making the effective limit (max × workers).
+// To enforce a true global limit, add Redis: npm i @fastify/redis ioredis
+// and pass `redis: redisClient` here. Acceptable trade-off on free-tier infra.
 app.register(rateLimit, {
     max: config.rateLimit.max,
     timeWindow: config.rateLimit.windowMs,
+});
+
+// ── Root Health Check ─────────────────────────────────────────────────────────
+const serverStartTime = Date.now();
+app.get('/', async (request, reply) => {
+    reply.status(200).send({
+        status: 'healthy',
+        message: 'LenientTree Backend API is operational',
+        uptimeSeconds: Math.floor((Date.now() - serverStartTime) / 1000),
+        deployment: {
+            version: '1.1.0',
+            updatedAt: '2026-05-26T00:58:51+05:30',
+            features: [
+                'Centralized automated email notification system',
+                'SMTP connection pooling & fallback degraded mode',
+                'Vercel dynamic preview CORS allowed origins'
+            ]
+        }
+    });
+});
+
+app.get('/health', async (request, reply) => {
+    reply.status(200).send({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptimeSeconds: Math.floor((Date.now() - serverStartTime) / 1000),
+        deployment: {
+            version: '1.1.0',
+            updatedAt: '2026-05-26T00:58:51+05:30'
+        }
+    });
 });
 
 // ── Routes ────────────────────────────────────────────────────────────────────
