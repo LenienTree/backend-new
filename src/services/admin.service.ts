@@ -234,6 +234,17 @@ export class AdminService {
 
         return { events: summary, totals };
     }
+
+    async updateEventsOrder(events: { id: string; displayOrder: number }[]) {
+        const updates = events.map((ev) =>
+            prisma.event.update({
+                where: { id: ev.id },
+                data: { displayOrder: ev.displayOrder },
+            })
+        );
+        await prisma.$transaction(updates);
+        return { success: true };
+    }
 }
 
 export const adminService = new AdminService();

@@ -84,6 +84,9 @@ export const updateEventSchema = createEventStep1Schema.partial().merge(
     address: z.string().nullable().optional(),
     mapLink: z.string().nullable().optional(),
     upiQrCode: z.string().nullable().optional(),
+    requiresLinkedinShare: z.boolean().optional(),
+    linkedinShareDescription: z.string().nullable().optional(),
+    linkedinSharePoster: z.string().nullable().optional(),
 });
 
 export const eventFiltersSchema = z.object({
