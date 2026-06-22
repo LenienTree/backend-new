@@ -218,6 +218,15 @@ export class EventService {
         });
     }
 
+    async uploadLinkedinPoster(eventId: string, organizerId: string, posterUrl: string, role?: string) {
+        await this.verifyOwnership(eventId, organizerId, role);
+        return prisma.event.update({
+            where: { id: eventId },
+            data: { linkedinSharePoster: posterUrl },
+            select: { id: true, linkedinSharePoster: true },
+        });
+    }
+
     async getEvents(filters: EventFilters) {
         const { page, limit, category, month, status, search, mode, isPaid, organizerId } = filters;
         const { skip, page: p, limit: l } = getPagination(page, limit);
@@ -266,6 +275,9 @@ export class EventService {
                     maxParticipants: true,
                     isFeatured: true,
                     isPremium: true,
+                    requiresLinkedinShare: true,
+                    linkedinShareDescription: true,
+                    linkedinSharePoster: true,
                     registrationType: true,
                     minTeamSize: true,
                     maxTeamSize: true,
@@ -276,7 +288,7 @@ export class EventService {
                 },
                 skip,
                 take: l,
-                orderBy: [{ isFeatured: 'desc' }, { startDate: 'asc' }],
+                orderBy: [{ displayOrder: 'asc' }, { isFeatured: 'desc' }, { startDate: 'asc' }],
             }),
             prisma.event.count({ where }),
         ]);

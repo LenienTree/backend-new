@@ -101,6 +101,12 @@ export class AdminController {
 
         sendSuccess(reply, user, 'Organizer approved successfully.');
     };
+
+    updateEventsOrder = async (request: AuthRequest, reply: FastifyReply) => {
+        const { events } = request.body as { events: { id: string; displayOrder: number }[] };
+        const result = await adminService.updateEventsOrder(events);
+        sendSuccess(reply, result, 'Events order updated');
+    };
 }
 
 export const adminController = new AdminController();
