@@ -22,4 +22,3 @@ export default async function routes(fastify: FastifyInstance) {
     fastify.register(homepageRoutes, { prefix: '/homepage' });
     fastify.register(notificationRoutes, { prefix: '/notifications' });
 }
-

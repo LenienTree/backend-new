@@ -115,6 +115,12 @@ export default async function eventRoutes(fastify: FastifyInstance) {
         handler: eventController.uploadUpiQrCode
     });
 
+    // POST /api/events/:id/linkedin-poster
+    fastify.post('/:id/linkedin-poster', {
+        preHandler: [authenticate, requireOrganizer],
+        handler: eventController.uploadLinkedinPoster
+    });
+
     // DELETE /api/events/:id
     fastify.delete('/:id', {
         preHandler: [authenticate, auditLog('DELETE', 'Event')],

@@ -260,59 +260,40 @@ model Notification {
   @@index([userId, createdAt])
 }
 
-// ── Homepage Configurator ─────────────────────────────────────────────────────
-
-model HomepageBanner {
+model HeroSlide {
   id        String   @id @default(uuid())
   imageUrl  String
-  altText   String?
-  linkUrl   String?
   order     Int      @default(0)
-  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([order])
 }
 
-model HomepageCommunityImage {
+model CommunityShowcaseImage {
   id        String   @id @default(uuid())
   imageUrl  String
-  caption   String?
   order     Int      @default(0)
-  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([order])
 }
 
-model HomepageTestimonial {
-  id         String   @id @default(uuid())
-  name       String
-  role       String?
-  college    String?
-  text       String
-  avatarUrl  String?
-  rating     Int?
-  isActive   Boolean  @default(true)
-  order      Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@index([order])
+model Testimonial {
+  id        String   @id @default(uuid())
+  name      String
+  role      String
+  quote     String
+  avatarUrl String?
+  badge     String?
+  link      String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
 }
 
 model HomepageSection {
   id        String   @id @default(uuid())
-  key       String   @unique   // e.g. "hackathon", "webinar", "ideathon"
-  label     String             // Display name, e.g. "Hackathons"
+  key       String   @unique
+  title     String
   order     Int      @default(0)
-  isVisible Boolean  @default(true)
+  visible   Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@index([order])
 }
 
 // ── Enums ─────────────────────────────────────────────────────────────────────

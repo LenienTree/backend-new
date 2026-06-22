@@ -58,6 +58,9 @@ async function main() {
     await prisma.socialLink.deleteMany();
     await prisma.galleryImage.deleteMany();
     await prisma.user.deleteMany();
+    await prisma.heroSlide.deleteMany();
+    await prisma.communityShowcaseImage.deleteMany();
+    await prisma.testimonial.deleteMany();
     console.log("  ✓ Cleared existing data");
 
     /* ── 2. USERS ─────────────────────────────────────────────────────────────── */
@@ -458,6 +461,62 @@ async function main() {
     });
 
     console.log("  ✓ Created 3 certificates");
+
+    /* ── 9. HOMEPAGE ─────────────────────────────────────────────────────────── */
+    await prisma.heroSlide.createMany({
+        data: [
+            { imageUrl: "./Hero/1.png", order: 1 },
+            { imageUrl: "./Hero/2.png", order: 2 },
+            { imageUrl: "./Hero/3.png", order: 3 },
+            { imageUrl: "./Hero/4.png", order: 4 },
+            { imageUrl: "./Hero/5.png", order: 5 },
+        ],
+    });
+
+    await prisma.communityShowcaseImage.createMany({
+        data: [
+            { imageUrl: "/community/comm1.png", order: 1 },
+            { imageUrl: "/community/comm2.png", order: 2 },
+            { imageUrl: "/community/comm3.png", order: 3 },
+            { imageUrl: "/community/comm4.jpeg", order: 4 },
+            { imageUrl: "/community/comm5.jpeg", order: 5 },
+            { imageUrl: "/community/comm6.jpeg", order: 6 },
+        ],
+    });
+
+    await prisma.testimonial.createMany({
+        data: [
+            {
+                name: "Abdul Samad",
+                avatarUrl: "/testimonial/abdul-samad.jpg",
+                badge: "A",
+                role: "CEO, Appetite Studio",
+                quote: "Hack for Good was a great initiative to support impactful ideas. Augustine was supportive throughout the event from the very beginning and helped us with volunteer coordination during the hackathon. Wishing Augustine and Lenient Tree the best for more such community-driven events ahead.",
+                link: "https://www.linkedin.com/in/4samad?utm_source=share_via&utm_content=profile&utm_medium=member_android",
+                order: 1,
+            },
+            {
+                name: "Ray Podder",
+                avatarUrl: "/testimonial/ray-podder.jpeg",
+                badge: "O",
+                role: "One Network Solutions",
+                quote: "It was a privilege working with the Lenient Tree. What impressed me wasn't just their talent, but their willingness to question assumptions, think differently, and embrace uncertainty. As AI makes knowledge and execution increasingly abundant, the future belongs to those who can turn insight into impact and imagination into value. The students I met showed exactly that potential. That's the kind of creator mindset the future demands.",
+                link: "https://www.linkedin.com/in/raypodder?utm_source=share_via&utm_content=profile&utm_medium=member_android",
+                order: 2,
+            },
+            {
+                name: "Soham Chatterjee",
+                avatarUrl: "/testimonial/soham.jpeg",
+                badge: "I",
+                role: "IISER Berhampur",
+                quote: "It was a privilege to collaborate with Lenient Tree for the successful conduct of the ThinkerRoot Ideathon. We are proud to have supported the initiative as the educational partner from Indian Institute of Science Education and Research Berhampur.",
+                link: "https://www.linkedin.com/in/soham-chatterjee-908510256?utm_source=share_via&utm_content=profile&utm_medium=member_android",
+                order: 3,
+            },
+        ],
+    });
+
+    console.log("  ✓ Created homepage default configuration");
 
     /* ── Done ─────────────────────────────────────────────────────────────────── */
     console.log("\n✅ Seed complete!");

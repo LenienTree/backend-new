@@ -234,6 +234,7 @@ export class AdminService {
 
         return { events: summary, totals };
     }
+
     async getAnalytics() {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -325,6 +326,17 @@ export class AdminService {
             })),
             totalRevenue,
         };
+    }
+
+    async updateEventsOrder(events: { id: string; displayOrder: number }[]) {
+        const updates = events.map((ev) =>
+            prisma.event.update({
+                where: { id: ev.id },
+                data: { displayOrder: ev.displayOrder },
+            })
+        );
+        await prisma.$transaction(updates);
+        return { success: true };
     }
 }
 
