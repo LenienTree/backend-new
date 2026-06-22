@@ -234,6 +234,98 @@ export class AdminService {
 
         return { events: summary, totals };
     }
+    async getAnalytics() {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const ninetyDaysAgo = new Date();
+        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+        const [
+            dailySignups,
+            eventsByStatus,
+            eventsByCategory,
+            recentRegistrations,
+            topEvents,
+        ] = await Promise.all([
+            // Daily user signups for last 30 days
+            prisma.$queryRaw<{ date: string; count: bigint }[]>`
+                SELECT DATE("createdAt") as date, COUNT(*) as count
+                FROM "User"
+                WHERE "createdAt" >= ${thirtyDaysAgo} AND "deletedAt" IS NULL
+                GROUP BY DATE("createdAt")
+                ORDER BY date ASC
+            `,
+            // Events grouped by status
+            prisma.event.groupBy({
+                by: ['status'],
+                _count: { _all: true },
+                where: { deletedAt: null },
+            }),
+            // Events grouped by category
+            prisma.event.groupBy({
+                by: ['category'],
+                _count: { _all: true },
+                where: { deletedAt: null, status: 'APPROVED' },
+            }),
+            // Daily registrations for last 30 days
+            prisma.$queryRaw<{ date: string; count: bigint }[]>`
+                SELECT DATE("registeredAt") as date, COUNT(*) as count
+                FROM "Registration"
+                WHERE "registeredAt" >= ${thirtyDaysAgo}
+                GROUP BY DATE("registeredAt")
+                ORDER BY date ASC
+            `,
+            // Top 5 events by registration count
+            prisma.event.findMany({
+                where: { deletedAt: null, status: 'APPROVED' },
+                select: {
+                    id: true,
+                    title: true,
+                    category: true,
+                    _count: { select: { registrations: true } },
+                },
+                orderBy: { registrations: { _count: 'desc' } },
+                take: 5,
+            }),
+        ]);
+
+        // Revenue last 90 days
+        const paidRegs = await prisma.registration.findMany({
+            where: {
+                paymentStatus: 'PAID',
+                registeredAt: { gte: ninetyDaysAgo },
+            },
+            include: { event: { select: { ticketPrice: true } } },
+        });
+        const totalRevenue = paidRegs.reduce((sum, r) => sum + (r.event.ticketPrice || 0), 0);
+
+        return {
+            dailySignups: dailySignups.map(d => ({
+                date: d.date,
+                count: Number(d.count),
+            })),
+            eventsByStatus: eventsByStatus.map(e => ({
+                status: e.status,
+                count: e._count._all,
+            })),
+            eventsByCategory: eventsByCategory.map(e => ({
+                category: e.category,
+                count: e._count._all,
+            })),
+            recentRegistrations: recentRegistrations.map(d => ({
+                date: d.date,
+                count: Number(d.count),
+            })),
+            topEvents: topEvents.map(e => ({
+                id: e.id,
+                title: e.title,
+                category: e.category,
+                registrations: e._count.registrations,
+            })),
+            totalRevenue,
+        };
+    }
 }
 
 export const adminService = new AdminService();

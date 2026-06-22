@@ -301,11 +301,18 @@ export class EventService {
                 announcements: {
                     orderBy: { publishDate: 'desc' },
                     include: {
-                        creator: { select: { id: true, name: true, profileImage: true } },
+                        // Use optional include — creator user may have been soft/hard deleted
+                        creator: {
+                            select: { id: true, name: true, profileImage: true },
+                        },
                     },
                 },
                 _count: { select: { registrations: true } },
             },
+        }).catch((err) => {
+            // Surface the real DB error as an AppError so it returns 500 with a message
+            // rather than an unhandled rejection with no context
+            throw new AppError(`Failed to fetch event: ${err?.message ?? 'Database error'}`, 500);
         });
 
         if (!event) throw new AppError('Event not found.', 404);
@@ -431,6 +438,103 @@ export class EventService {
         }
 
         return event;
+    }
+
+    async getEventStats(eventId: string) {
+        const event = await prisma.event.findUnique({
+            where: { id: eventId, deletedAt: null },
+            select: {
+                id: true,
+                title: true,
+                maxParticipants: true,
+                ticketPrice: true,
+                isPaid: true,
+                startDate: true,
+                registrationDeadline: true,
+            },
+        });
+        if (!event) throw new AppError('Event not found.', 404);
+
+        const [total, approved, pending, rejected, attended, paid] = await Promise.all([
+            prisma.registration.count({ where: { eventId } }),
+            prisma.registration.count({ where: { eventId, status: 'APPROVED' } }),
+            prisma.registration.count({ where: { eventId, status: 'PENDING' } }),
+            prisma.registration.count({ where: { eventId, status: 'REJECTED' } }),
+            prisma.registration.count({ where: { eventId, status: 'ATTENDED' } }),
+            prisma.registration.count({ where: { eventId, paymentStatus: 'PAID' } }),
+        ]);
+
+        const revenue = paid * (event.ticketPrice || 0);
+        const capacityPercent = event.maxParticipants
+            ? Math.round((approved / event.maxParticipants) * 100)
+            : null;
+        const deadlineMs = event.registrationDeadline
+            ? event.registrationDeadline.getTime() - Date.now()
+            : null;
+        const isDeadlinePassed = deadlineMs !== null && deadlineMs < 0;
+
+        return {
+            eventId,
+            title: event.title,
+            registrations: { total, approved, pending, rejected, attended },
+            payments: { paid, revenue },
+            capacity: {
+                max: event.maxParticipants,
+                filled: approved,
+                percent: capacityPercent,
+                isFull: event.maxParticipants ? approved >= event.maxParticipants : false,
+            },
+            deadline: {
+                date: event.registrationDeadline,
+                isPassed: isDeadlinePassed,
+                remainingMs: isDeadlinePassed ? 0 : deadlineMs,
+            },
+        };
+    }
+
+    async getShareData(eventId: string) {
+        const event = await prisma.event.findUnique({
+            where: { id: eventId, deletedAt: null },
+            select: {
+                id: true,
+                title: true,
+                subtitle: true,
+                description: true,
+                category: true,
+                mode: true,
+                startDate: true,
+                bannerImage: true,
+                eventPoster: true,
+                organizer: { select: { name: true } },
+            },
+        });
+        if (!event) throw new AppError('Event not found.', 404);
+
+        const baseUrl = config.clientUrl;
+        const eventUrl = `${baseUrl}/event/${event.id}`;
+        const image = event.bannerImage || event.eventPoster || `${baseUrl}/og-default.png`;
+        const title = event.title;
+        const description = (event.subtitle || event.description || '').slice(0, 160);
+
+        return {
+            url: eventUrl,
+            title,
+            description,
+            image,
+            shareLinks: {
+                twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${title} on LenientTree!`)}&url=${encodeURIComponent(eventUrl)}`,
+                linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(eventUrl)}`,
+                whatsapp: `https://wa.me/?text=${encodeURIComponent(`${title} - ${eventUrl}`)}`,
+                facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(eventUrl)}`,
+            },
+            og: {
+                title,
+                description,
+                image,
+                url: eventUrl,
+                type: 'website',
+            },
+        };
     }
 }
 

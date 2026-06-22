@@ -39,6 +39,7 @@ model User {
   skills          UserSkill[]
   referrals       Referral[]
   referralClicks  ReferralClick[]
+  notifications   Notification[]
 
   @@index([email])
   @@index([status])
@@ -243,6 +244,79 @@ model AuditLog {
   @@index([userId])
 }
 
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  entityId  String?          // e.g. eventId, registrationId
+  entityType String?         // e.g. "Event", "Registration"
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+
+// ── Homepage Configurator ─────────────────────────────────────────────────────
+
+model HomepageBanner {
+  id        String   @id @default(uuid())
+  imageUrl  String
+  altText   String?
+  linkUrl   String?
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([order])
+}
+
+model HomepageCommunityImage {
+  id        String   @id @default(uuid())
+  imageUrl  String
+  caption   String?
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([order])
+}
+
+model HomepageTestimonial {
+  id         String   @id @default(uuid())
+  name       String
+  role       String?
+  college    String?
+  text       String
+  avatarUrl  String?
+  rating     Int?
+  isActive   Boolean  @default(true)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([order])
+}
+
+model HomepageSection {
+  id        String   @id @default(uuid())
+  key       String   @unique   // e.g. "hackathon", "webinar", "ideathon"
+  label     String             // Display name, e.g. "Hackathons"
+  order     Int      @default(0)
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([order])
+}
+
+// ── Enums ─────────────────────────────────────────────────────────────────────
+
 enum Role {
   ADMIN
   USER
@@ -309,4 +383,17 @@ enum PaymentType {
   FREE
   MANUAL_UPI
   RAZORPAY
+}
+
+enum NotificationType {
+  EVENT_APPROVED
+  EVENT_REJECTED
+  REGISTRATION_CONFIRMED
+  REGISTRATION_APPROVED
+  REGISTRATION_REJECTED
+  EVENT_UPDATED
+  EVENT_CANCELLED
+  ANNOUNCEMENT
+  CERTIFICATE_ISSUED
+  GENERAL
 }

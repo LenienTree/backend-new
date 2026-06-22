@@ -50,6 +50,11 @@ export class AdminController {
         sendSuccess(reply, logs);
     };
 
+    getAnalytics = async (_request: AuthRequest, reply: FastifyReply) => {
+        const result = await adminService.getAnalytics();
+        sendSuccess(reply, result);
+    };
+
     getOrganizerRequests = async (request: AuthRequest, reply: FastifyReply) => {
         const requests = await adminService.getOrganizerRequests();
         sendSuccess(reply, requests);

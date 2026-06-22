@@ -1,4 +1,4 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest } from 'fastify';
 import { eventController } from '../controllers/event.controller';
 import { registrationController } from '../controllers/registration.controller';
 import { paymentController } from '../controllers/payment.controller';
@@ -32,6 +32,12 @@ export default async function eventRoutes(fastify: FastifyInstance) {
         preHandler: optionalAuth,
         handler: eventController.getEventById
     });
+
+    // GET /api/events/:id/stats  (public)
+    fastify.get('/:id/stats', eventController.getEventStats);
+
+    // GET /api/events/:id/share  (public)
+    fastify.get('/:id/share', eventController.getShareData);
 
     // GET /api/events/:id/announcements
     fastify.get('/:id/announcements', announcementController.getByEvent);

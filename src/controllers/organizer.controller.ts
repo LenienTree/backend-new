@@ -32,6 +32,17 @@ export class CertificateController {
         sendSuccess(reply, cert, 'Certificate issued');
     };
 
+    bulkIssue = async (request: AuthRequest, reply: FastifyReply) => {
+        const { eventId, recipients } = request.body as any;
+        const results = await certificateService.bulkIssue(
+            eventId,
+            recipients,
+            request.user!.userId,
+            request.user!.role
+        );
+        sendSuccess(reply, results, 'Bulk certificate issue completed');
+    };
+
     getByUser = async (request: AuthRequest, reply: FastifyReply) => {
         const certs = await certificateService.getByUser(request.user!.userId);
         sendSuccess(reply, certs);

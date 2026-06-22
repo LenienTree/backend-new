@@ -20,6 +20,12 @@ export default async function organizerRoutes(fastify: FastifyInstance) {
         handler: certificateController.issue
     });
 
+    // POST /api/organizer/certificates/bulk-issue
+    fastify.post('/certificates/bulk-issue', {
+        preHandler: [authenticate, requireOrganizer],
+        handler: certificateController.bulkIssue
+    });
+
     // GET /api/organizer/certificates (own user's certs)
     fastify.get('/certificates', {
         preHandler: authenticate,

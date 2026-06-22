@@ -9,6 +9,7 @@ import multipart from '@fastify/multipart';
 import { config } from './config/config';
 import routes from './routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
+import { prisma } from './config/database';
 
 const app: FastifyInstance = fastify({
     logger: config.env !== 'test' ? {
@@ -117,6 +118,37 @@ app.get('/health', async (request, reply) => {
             updatedAt: '2026-05-26T00:58:51+05:30'
         }
     });
+});
+
+app.get('/sitemap.xml', async (request, reply) => {
+    try {
+        const events = await prisma.event.findMany({
+            where: { status: 'APPROVED', deletedAt: null },
+            select: { id: true, updatedAt: true },
+        });
+
+        const baseUrl = config.clientUrl || 'https://lenienttree.com';
+        
+        let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+        xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+
+        // Static routes
+        xml += `  <url>\n    <loc>${baseUrl}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
+        xml += `  <url>\n    <loc>${baseUrl}/explore</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+
+        // Dynamic event routes
+        events.forEach(event => {
+            const lastmod = event.updatedAt.toISOString().split('T')[0];
+            xml += `  <url>\n    <loc>${baseUrl}/events/${event.id}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+        });
+
+        xml += `</urlset>`;
+
+        reply.type('application/xml').send(xml);
+    } catch (err: any) {
+        app.log.error(err);
+        reply.status(500).send('Internal Server Error');
+    }
 });
 
 // ── Routes ────────────────────────────────────────────────────────────────────
