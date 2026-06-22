@@ -328,6 +328,35 @@ export class AdminService {
         };
     }
 
+    async getAllEvents(page = '1', limit = '50', status?: string, search?: string) {
+        const { skip, page: p, limit: l } = getPagination(page, limit);
+
+        const where: any = { deletedAt: null };
+        if (status) where.status = status;
+        if (search) {
+            where.OR = [
+                { title: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } },
+            ];
+        }
+
+        const [events, total] = await Promise.all([
+            prisma.event.findMany({
+                where,
+                include: {
+                    organizer: { select: { id: true, name: true, email: true } },
+                    _count: { select: { registrations: true } },
+                },
+                skip,
+                take: l,
+                orderBy: { createdAt: 'desc' },
+            }),
+            prisma.event.count({ where }),
+        ]);
+
+        return buildPaginatedResult(events, total, p, l);
+    }
+
     async updateEventsOrder(events: { id: string; displayOrder: number }[]) {
         const updates = events.map((ev) =>
             prisma.event.update({

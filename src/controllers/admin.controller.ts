@@ -107,6 +107,14 @@ export class AdminController {
         sendSuccess(reply, user, 'Organizer approved successfully.');
     };
 
+    getAllEvents = async (request: AuthRequest, reply: FastifyReply) => {
+        const { page, limit, status, search } = request.query as {
+            page?: string; limit?: string; status?: string; search?: string;
+        };
+        const data = await adminService.getAllEvents(page, limit, status, search);
+        sendSuccess(reply, data);
+    };
+
     updateEventsOrder = async (request: AuthRequest, reply: FastifyReply) => {
         const { events } = request.body as { events: { id: string; displayOrder: number }[] };
         const result = await adminService.updateEventsOrder(events);

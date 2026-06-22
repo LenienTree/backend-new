@@ -235,9 +235,7 @@ export class EventService {
         const where: Prisma.EventWhereInput = {
             deletedAt: null,
             ...(category && { category: category as Prisma.EventWhereInput['category'] }),
-            ...(status
-                ? { status: status as EventStatus }
-                : { status: 'APPROVED' }),
+            ...(status ? { status: status as EventStatus } : {}),
             ...(search && {
                 OR: [
                     { title: { contains: search, mode: 'insensitive' } },
