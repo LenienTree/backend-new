@@ -18,6 +18,7 @@ model User {
   isOrganizer     Boolean        @default(false)
   college         String?
   graduationYear  Int?
+  dateOfBirth     DateTime?
   bio             String?
   profileImage    String?
   status          UserStatus     @default(ACTIVE)
@@ -111,6 +112,10 @@ model Event {
   rejectionReason      String?
   isFeatured           Boolean        @default(false)
   isPremium            Boolean        @default(false)
+  displayOrder         Int            @default(0)
+  requiresLinkedinShare    Boolean        @default(false)
+  linkedinShareDescription String?
+  linkedinSharePoster      String?
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
   deletedAt            DateTime?
@@ -244,60 +249,6 @@ model AuditLog {
   @@index([userId])
 }
 
-model Notification {
-  id        String           @id @default(uuid())
-  userId    String
-  type      NotificationType
-  title     String
-  message   String
-  entityId  String?          // e.g. eventId, registrationId
-  entityType String?         // e.g. "Event", "Registration"
-  isRead    Boolean          @default(false)
-  createdAt DateTime         @default(now())
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, isRead])
-  @@index([userId, createdAt])
-}
-
-model HeroSlide {
-  id        String   @id @default(uuid())
-  imageUrl  String
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-}
-
-model CommunityShowcaseImage {
-  id        String   @id @default(uuid())
-  imageUrl  String
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-}
-
-model Testimonial {
-  id        String   @id @default(uuid())
-  name      String
-  role      String
-  quote     String
-  avatarUrl String?
-  badge     String?
-  link      String?
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-}
-
-model HomepageSection {
-  id        String   @id @default(uuid())
-  key       String   @unique
-  title     String
-  order     Int      @default(0)
-  visible   Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// ── Enums ─────────────────────────────────────────────────────────────────────
-
 enum Role {
   ADMIN
   USER
@@ -364,6 +315,58 @@ enum PaymentType {
   FREE
   MANUAL_UPI
   RAZORPAY
+}
+
+model HeroSlide {
+  id        String   @id @default(uuid())
+  imageUrl  String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model CommunityShowcaseImage {
+  id        String   @id @default(uuid())
+  imageUrl  String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Testimonial {
+  id        String   @id @default(uuid())
+  name      String
+  role      String
+  quote     String
+  avatarUrl String?
+  badge     String?
+  link      String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model HomepageSection {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  title     String
+  order     Int      @default(0)
+  visible   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  entityId  String?          // e.g. eventId, registrationId
+  entityType String?         // e.g. "Event", "Registration"
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
 }
 
 enum NotificationType {
