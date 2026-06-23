@@ -88,49 +88,78 @@ export class ReferralService {
     // ─── Generate referral (ADMIN) ─────────────────────────────────────────────
     /**
      * Admin creates a referral link for ANY event, pointing to a specific student
-     * as the referrer.
+     * or an entire college.
      */
-    async adminGenerateReferral(eventId: string, refereeUserId: string) {
+    async adminGenerateReferral(eventId: string, refereeUserId?: string, college?: string) {
         const event = await prisma.event.findUnique({ where: { id: eventId } });
         if (!event) throw new AppError('Event not found', 404);
 
-        const referee = await prisma.user.findUnique({ where: { id: refereeUserId } });
-        if (!referee) throw new AppError('Referee user not found', 404);
+        if (refereeUserId) {
+            const referee = await prisma.user.findUnique({ where: { id: refereeUserId } });
+            if (!referee) throw new AppError('Referee user not found', 404);
 
-        // Idempotent: return existing code if already generated
-        const existing = await prisma.referral.findFirst({
-            where: { eventId, referrerId: refereeUserId },
-        });
+            // Idempotent: return existing code if already generated
+            const existing = await prisma.referral.findFirst({
+                where: { eventId, referrerId: refereeUserId },
+            });
 
-        if (existing) {
+            if (existing) {
+                return {
+                    ...existing,
+                    link: this.buildLink(event.slug ?? eventId, existing.code, referee.college, referee.name),
+                    referee: { id: referee.id, name: referee.name, email: referee.email, college: referee.college },
+                };
+            }
+
+            const code = this.generateCode();
+            const referral = await prisma.referral.create({
+                data: { code, eventId, referrerId: refereeUserId },
+            });
+
             return {
-                ...existing,
-                link: this.buildLink(event.slug ?? eventId, existing.code, referee.college, referee.name),
+                ...referral,
+                link: this.buildLink(event.slug ?? eventId, referral.code, referee.college, referee.name),
                 referee: { id: referee.id, name: referee.name, email: referee.email, college: referee.college },
             };
+        } else if (college) {
+            // College-level referral (no student)
+            const existing = await prisma.referral.findFirst({
+                where: { eventId, college, referrerId: null },
+            });
+
+            if (existing) {
+                return {
+                    ...existing,
+                    link: this.buildLink(event.slug ?? eventId, existing.code, college, null),
+                    referee: { id: null, name: 'Entire College', email: '', college },
+                };
+            }
+
+            const code = this.generateCode();
+            const referral = await prisma.referral.create({
+                data: { code, eventId, referrerId: null, college },
+            });
+
+            return {
+                ...referral,
+                link: this.buildLink(event.slug ?? eventId, referral.code, college, null),
+                referee: { id: null, name: 'Entire College', email: '', college },
+            };
+        } else {
+            throw new AppError('Either refereeUserId or college must be provided', 400);
         }
-
-        const code = this.generateCode();
-        const referral = await prisma.referral.create({
-            data: { code, eventId, referrerId: refereeUserId },
-        });
-
-        return {
-            ...referral,
-            link: this.buildLink(event.slug ?? eventId, referral.code, referee.college, referee.name),
-            referee: { id: referee.id, name: referee.name, email: referee.email, college: referee.college },
-        };
     }
 
     // ─── Generate referral (ORGANIZER) ────────────────────────────────────────
     /**
      * Organizer creates a referral link only for their own events.
-     * They pick a student (refereeUserId) who will be tracked as the referrer.
+     * They pick a student or an entire college as the referrer.
      */
     async organizerGenerateReferral(
         eventId: string,
         organizerId: string,
-        refereeUserId: string
+        refereeUserId?: string,
+        college?: string
     ) {
         const event = await prisma.event.findUnique({ where: { id: eventId } });
         if (!event) throw new AppError('Event not found', 404);
@@ -138,32 +167,60 @@ export class ReferralService {
             throw new AppError('You can only create referral links for your own events', 403);
         }
 
-        const referee = await prisma.user.findUnique({ where: { id: refereeUserId } });
-        if (!referee) throw new AppError('Referee user not found', 404);
+        if (refereeUserId) {
+            const referee = await prisma.user.findUnique({ where: { id: refereeUserId } });
+            if (!referee) throw new AppError('Referee user not found', 404);
 
-        // Idempotent
-        const existing = await prisma.referral.findFirst({
-            where: { eventId, referrerId: refereeUserId },
-        });
+            // Idempotent
+            const existing = await prisma.referral.findFirst({
+                where: { eventId, referrerId: refereeUserId },
+            });
 
-        if (existing) {
+            if (existing) {
+                return {
+                    ...existing,
+                    link: this.buildLink(event.slug ?? eventId, existing.code, referee.college, referee.name),
+                    referee: { id: referee.id, name: referee.name, email: referee.email, college: referee.college },
+                };
+            }
+
+            const code = this.generateCode();
+            const referral = await prisma.referral.create({
+                data: { code, eventId, referrerId: refereeUserId },
+            });
+
             return {
-                ...existing,
-                link: this.buildLink(event.slug ?? eventId, existing.code, referee.college, referee.name),
+                ...referral,
+                link: this.buildLink(event.slug ?? eventId, referral.code, referee.college, referee.name),
                 referee: { id: referee.id, name: referee.name, email: referee.email, college: referee.college },
             };
+        } else if (college) {
+            // College-level referral (no student)
+            const existing = await prisma.referral.findFirst({
+                where: { eventId, college, referrerId: null },
+            });
+
+            if (existing) {
+                return {
+                    ...existing,
+                    link: this.buildLink(event.slug ?? eventId, existing.code, college, null),
+                    referee: { id: null, name: 'Entire College', email: '', college },
+                };
+            }
+
+            const code = this.generateCode();
+            const referral = await prisma.referral.create({
+                data: { code, eventId, referrerId: null, college },
+            });
+
+            return {
+                ...referral,
+                link: this.buildLink(event.slug ?? eventId, referral.code, college, null),
+                referee: { id: null, name: 'Entire College', email: '', college },
+            };
+        } else {
+            throw new AppError('Either refereeUserId or college must be provided', 400);
         }
-
-        const code = this.generateCode();
-        const referral = await prisma.referral.create({
-            data: { code, eventId, referrerId: refereeUserId },
-        });
-
-        return {
-            ...referral,
-            link: this.buildLink(event.slug ?? eventId, referral.code, referee.college, referee.name),
-            referee: { id: referee.id, name: referee.name, email: referee.email, college: referee.college },
-        };
     }
 
     // ─── Track click ──────────────────────────────────────────────────────────
@@ -235,11 +292,11 @@ export class ReferralService {
             referrals: referrals.map((r) => ({
                 id: r.id,
                 code: r.code,
-                link: this.buildLink(eventSlug, r.code, r.referrer?.college, r.referrer?.name),
+                link: this.buildLink(eventSlug, r.code, r.referrer?.college || r.college, r.referrer?.name),
                 clicks: r.clicks,
                 conversions: r.conversions,
                 createdAt: r.createdAt,
-                referrer: r.referrer,
+                referrer: r.referrer ? r.referrer : { id: null, name: 'Entire College', email: '', college: r.college },
                 recentClicks: r.clicksData,
             })),
         };

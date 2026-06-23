@@ -160,7 +160,8 @@ model Referral {
   id          String   @id @default(uuid())
   code        String   @unique
   eventId     String
-  referrerId  String
+  referrerId  String?
+  college     String?
 
   clicks      Int      @default(0)
   conversions Int      @default(0)
@@ -168,7 +169,7 @@ model Referral {
   createdAt   DateTime @default(now())
 
   event       Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  referrer    User            @relation(fields: [referrerId], references: [id], onDelete: Cascade)
+  referrer    User?           @relation(fields: [referrerId], references: [id], onDelete: Cascade)
   clicksData  ReferralClick[]
   registrations Registration[]
 }

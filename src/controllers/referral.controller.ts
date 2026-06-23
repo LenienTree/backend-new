@@ -22,14 +22,15 @@ export class ReferralController {
 
     /**
      * POST /api/referral/admin/generate
-     * Body: { eventId, refereeUserId }
+     * Body: { eventId, refereeUserId, college }
      */
     adminGenerateReferral = async (request: AuthRequest, reply: FastifyReply) => {
-        const { eventId, refereeUserId } = request.body as {
+        const { eventId, refereeUserId, college } = request.body as {
             eventId: string;
-            refereeUserId: string;
+            refereeUserId?: string;
+            college?: string;
         };
-        const result = await referralService.adminGenerateReferral(eventId, refereeUserId);
+        const result = await referralService.adminGenerateReferral(eventId, refereeUserId, college);
         sendSuccess(reply, result, 'Referral link generated');
     };
 
@@ -64,18 +65,20 @@ export class ReferralController {
 
     /**
      * POST /api/referral/organizer/generate
-     * Body: { eventId, refereeUserId }
+     * Body: { eventId, refereeUserId, college }
      */
     organizerGenerateReferral = async (request: AuthRequest, reply: FastifyReply) => {
-        const { eventId, refereeUserId } = request.body as {
+        const { eventId, refereeUserId, college } = request.body as {
             eventId: string;
-            refereeUserId: string;
+            refereeUserId?: string;
+            college?: string;
         };
         const organizerId = request.user!.userId;
         const result = await referralService.organizerGenerateReferral(
             eventId,
             organizerId,
-            refereeUserId
+            refereeUserId,
+            college
         );
         sendSuccess(reply, result, 'Referral link generated');
     };
