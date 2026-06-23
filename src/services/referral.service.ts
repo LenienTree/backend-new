@@ -34,6 +34,32 @@ export class ReferralService {
         return url;
     }
 
+    // Build the short, shareable link, e.g. https://lenienttree.in/r/9F3KQ2.
+    // The backend's GET /r/:code endpoint 302-redirects this to the full link.
+    private buildShortLink(code: string): string {
+        return `${config.shortUrl}/r/${code}`;
+    }
+
+    // Resolve a short code to its full destination URL (with UTM tags rebuilt).
+    // Used by GET /r/:code. Returns null if the code is unknown.
+    async resolveTargetUrl(code: string): Promise<string | null> {
+        const referral = await prisma.referral.findUnique({
+            where: { code },
+            include: {
+                event: { select: { id: true, slug: true } },
+                referrer: { select: { name: true, college: true } },
+            },
+        });
+        if (!referral || !referral.event) return null;
+
+        const slugOrId = referral.event.slug ?? referral.event.id;
+        // Student referral → use the referrer's college/name; college referral →
+        // the referral's own college, no name.
+        const college = referral.referrer?.college ?? referral.college ?? null;
+        const name = referral.referrer?.name ?? null;
+        return this.buildLink(slugOrId, referral.code, college, name);
+    }
+
     // ─── Admin: list distinct colleges ────────────────────────────────────────
     async listColleges(): Promise<string[]> {
         const result = await prisma.user.findMany({
@@ -106,7 +132,8 @@ export class ReferralService {
             if (existing) {
                 return {
                     ...existing,
-                    link: this.buildLink(event.slug ?? eventId, existing.code, referee.college, referee.name),
+                    link: this.buildShortLink(existing.code),
+                    fullLink: this.buildLink(event.slug ?? eventId, existing.code, referee.college, referee.name),
                     referee: { id: referee.id, name: referee.name, email: referee.email, college: referee.college },
                 };
             }
@@ -118,7 +145,8 @@ export class ReferralService {
 
             return {
                 ...referral,
-                link: this.buildLink(event.slug ?? eventId, referral.code, referee.college, referee.name),
+                link: this.buildShortLink(referral.code),
+                fullLink: this.buildLink(event.slug ?? eventId, referral.code, referee.college, referee.name),
                 referee: { id: referee.id, name: referee.name, email: referee.email, college: referee.college },
             };
         } else if (college) {
@@ -130,7 +158,8 @@ export class ReferralService {
             if (existing) {
                 return {
                     ...existing,
-                    link: this.buildLink(event.slug ?? eventId, existing.code, college, null),
+                    link: this.buildShortLink(existing.code),
+                    fullLink: this.buildLink(event.slug ?? eventId, existing.code, college, null),
                     referee: { id: null, name: 'Entire College', email: '', college },
                 };
             }
@@ -142,7 +171,8 @@ export class ReferralService {
 
             return {
                 ...referral,
-                link: this.buildLink(event.slug ?? eventId, referral.code, college, null),
+                link: this.buildShortLink(referral.code),
+                fullLink: this.buildLink(event.slug ?? eventId, referral.code, college, null),
                 referee: { id: null, name: 'Entire College', email: '', college },
             };
         } else {
@@ -179,7 +209,8 @@ export class ReferralService {
             if (existing) {
                 return {
                     ...existing,
-                    link: this.buildLink(event.slug ?? eventId, existing.code, referee.college, referee.name),
+                    link: this.buildShortLink(existing.code),
+                    fullLink: this.buildLink(event.slug ?? eventId, existing.code, referee.college, referee.name),
                     referee: { id: referee.id, name: referee.name, email: referee.email, college: referee.college },
                 };
             }
@@ -191,7 +222,8 @@ export class ReferralService {
 
             return {
                 ...referral,
-                link: this.buildLink(event.slug ?? eventId, referral.code, referee.college, referee.name),
+                link: this.buildShortLink(referral.code),
+                fullLink: this.buildLink(event.slug ?? eventId, referral.code, referee.college, referee.name),
                 referee: { id: referee.id, name: referee.name, email: referee.email, college: referee.college },
             };
         } else if (college) {
@@ -203,7 +235,8 @@ export class ReferralService {
             if (existing) {
                 return {
                     ...existing,
-                    link: this.buildLink(event.slug ?? eventId, existing.code, college, null),
+                    link: this.buildShortLink(existing.code),
+                    fullLink: this.buildLink(event.slug ?? eventId, existing.code, college, null),
                     referee: { id: null, name: 'Entire College', email: '', college },
                 };
             }
@@ -215,7 +248,8 @@ export class ReferralService {
 
             return {
                 ...referral,
-                link: this.buildLink(event.slug ?? eventId, referral.code, college, null),
+                link: this.buildShortLink(referral.code),
+                fullLink: this.buildLink(event.slug ?? eventId, referral.code, college, null),
                 referee: { id: null, name: 'Entire College', email: '', college },
             };
         } else {
@@ -292,7 +326,8 @@ export class ReferralService {
             referrals: referrals.map((r) => ({
                 id: r.id,
                 code: r.code,
-                link: this.buildLink(eventSlug, r.code, r.referrer?.college || r.college, r.referrer?.name),
+                link: this.buildShortLink(r.code),
+                fullLink: this.buildLink(eventSlug, r.code, r.referrer?.college || r.college, r.referrer?.name),
                 clicks: r.clicks,
                 conversions: r.conversions,
                 createdAt: r.createdAt,

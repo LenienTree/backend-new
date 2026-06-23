@@ -10,6 +10,7 @@ import { config } from './config/config';
 import routes from './routes';
 import { errorHandler, notFound } from './middleware/error.middleware';
 import { prisma } from './config/database';
+import { referralService } from './services/referral.service';
 
 const app: FastifyInstance = fastify({
     logger: config.env !== 'test' ? {
@@ -149,6 +150,17 @@ app.get('/sitemap.xml', async (request, reply) => {
         app.log.error(err);
         reply.status(500).send('Internal Server Error');
     }
+});
+
+// ── Short referral links ───────────────────────────────────────────────────────
+// GET /r/:code → 302 redirect to the full event URL (with UTM tags rebuilt).
+// Lets us share compact links like https://lenienttree.in/r/PDC85F. The ?r=code
+// is preserved on the destination so the landing page still tracks the click.
+app.get<{ Params: { code: string } }>('/r/:code', async (request, reply) => {
+    const { code } = request.params;
+    const target = await referralService.resolveTargetUrl(code);
+    // Unknown/expired code → send them to the homepage rather than a dead end.
+    reply.code(302).header('location', target ?? config.clientUrl).send();
 });
 
 // ── Routes ────────────────────────────────────────────────────────────────────

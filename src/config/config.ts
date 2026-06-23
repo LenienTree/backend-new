@@ -13,6 +13,9 @@ export const config = {
     env: process.env.NODE_ENV || 'development',
     port: parseInt(process.env.PORT || '5000', 10),
     clientUrl: process.env.CLIENT_URL || 'http://localhost:3000',
+    // Base origin for short referral links (/r/:code). Should point at THIS
+    // backend (which serves the redirect), e.g. https://lenienttree.in.
+    shortUrl: process.env.SHORT_URL || process.env.CLIENT_URL || 'http://localhost:5000',
 
     jwt: {
         secret: requireSecret('JWT_SECRET', 'fallback_secret_dev_only'),
