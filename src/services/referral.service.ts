@@ -90,7 +90,7 @@ export class ReferralService {
      * Admin creates a referral link for ANY event, pointing to a specific student
      * or an entire college.
      */
-    async adminGenerateReferral(eventId: string, refereeUserId?: string, college?: string) {
+    async adminGenerateReferral(eventId: string, refereeUserId?: string | null, college?: string | null) {
         const event = await prisma.event.findUnique({ where: { id: eventId } });
         if (!event) throw new AppError('Event not found', 404);
 
@@ -158,8 +158,8 @@ export class ReferralService {
     async organizerGenerateReferral(
         eventId: string,
         organizerId: string,
-        refereeUserId?: string,
-        college?: string
+        refereeUserId?: string | null,
+        college?: string | null
     ) {
         const event = await prisma.event.findUnique({ where: { id: eventId } });
         if (!event) throw new AppError('Event not found', 404);
@@ -302,15 +302,28 @@ export class ReferralService {
         };
     }
 
-    async assignCollege(email: string, college: string) {
-        const user = await prisma.user.findFirst({
+    async assignCollege(email: string, college: string, name?: string) {
+        let user = await prisma.user.findFirst({
             where: {
                 email: email.trim().toLowerCase(),
                 deletedAt: null,
             },
         });
         if (!user) {
-            throw new AppError('User not found. Please ensure the student has registered an account first.', 404);
+            if (!name) {
+                throw new AppError('User not found. Please ensure the student has registered an account first, or provide their name to register them.', 404);
+            }
+            user = await prisma.user.create({
+                data: {
+                    name: name.trim(),
+                    email: email.trim().toLowerCase(),
+                    college: college.trim(),
+                    role: 'USER',
+                    status: 'ACTIVE',
+                    isEmailVerified: true,
+                },
+            });
+            return user;
         }
         if (user.status !== 'ACTIVE') {
             throw new AppError('User account is blocked or inactive.', 400);
@@ -318,7 +331,10 @@ export class ReferralService {
 
         const updated = await prisma.user.update({
             where: { id: user.id },
-            data: { college: college.trim() },
+            data: {
+                college: college.trim(),
+                ...(name ? { name: name.trim() } : {}),
+            },
             select: {
                 id: true,
                 name: true,

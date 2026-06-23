@@ -13,8 +13,8 @@ const trackClickSchema = z.object({
 
 const adminGenerateSchema = z.object({
     eventId: z.string().uuid('Invalid event ID'),
-    refereeUserId: z.string().uuid('Invalid referee user ID').optional(),
-    college: z.string().min(1, 'College name is required').optional(),
+    refereeUserId: z.string().uuid('Invalid referee user ID').nullable().optional(),
+    college: z.string().min(1, 'College name is required').nullable().optional(),
 }).refine(data => data.refereeUserId || data.college, {
     message: "Either refereeUserId or college must be provided",
     path: ["refereeUserId", "college"]
@@ -22,8 +22,8 @@ const adminGenerateSchema = z.object({
 
 const organizerGenerateSchema = z.object({
     eventId: z.string().uuid('Invalid event ID'),
-    refereeUserId: z.string().uuid('Invalid referee user ID').optional(),
-    college: z.string().min(1, 'College name is required').optional(),
+    refereeUserId: z.string().uuid('Invalid referee user ID').nullable().optional(),
+    college: z.string().min(1, 'College name is required').nullable().optional(),
 }).refine(data => data.refereeUserId || data.college, {
     message: "Either refereeUserId or college must be provided",
     path: ["refereeUserId", "college"]

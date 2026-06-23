@@ -114,12 +114,12 @@ export class ReferralController {
      * Body: { email, college }
      */
     assignCollege = async (request: AuthRequest, reply: FastifyReply) => {
-        const { email, college } = request.body as { email: string; college: string };
+        const { email, college, name } = request.body as { email: string; college: string; name?: string };
         if (!email || !college) {
             throw new AppError('Email and college are required', 400);
         }
-        const result = await referralService.assignCollege(email, college);
-        sendSuccess(reply, result, 'Student assigned to college successfully');
+        const result = await referralService.assignCollege(email, college, name);
+        sendSuccess(reply, result, name ? 'Student registered and assigned to college successfully' : 'Student assigned to college successfully');
     };
 }
 
