@@ -67,6 +67,16 @@ export default async function referralRoutes(fastify: FastifyInstance) {
         handler: referralController.adminGenerateReferral,
     });
 
+    // ASSIGN: POST /api/referral/admin/assign-college
+    fastify.post('/admin/assign-college', {
+        preHandler: [
+            authenticate,
+            authorize('ADMIN'),
+            auditLog('ADMIN_ASSIGN_COLLEGE', 'User'),
+        ],
+        handler: referralController.assignCollege,
+    });
+
     // GET /api/referral/admin/stats/:eventId
     fastify.get('/admin/stats/:eventId', {
         preHandler: [authenticate, authorize('ADMIN')],
@@ -108,6 +118,16 @@ export default async function referralRoutes(fastify: FastifyInstance) {
             auditLog('ORGANIZER_GENERATE_REFERRAL', 'Referral'),
         ],
         handler: referralController.organizerGenerateReferral,
+    });
+
+    // ASSIGN: POST /api/referral/organizer/assign-college
+    fastify.post('/organizer/assign-college', {
+        preHandler: [
+            authenticate,
+            requireOrganizer,
+            auditLog('ORGANIZER_ASSIGN_COLLEGE', 'User'),
+        ],
+        handler: referralController.assignCollege,
     });
 
     // TRACK: GET /api/referral/organizer/stats/:eventId

@@ -1,6 +1,6 @@
 import { FastifyReply } from 'fastify';
 import { referralService } from '../services/referral.service';
-import { sendSuccess } from '../utils/apiResponse';
+import { sendSuccess, AppError } from '../utils/apiResponse';
 import { AuthRequest } from '../types';
 
 export class ReferralController {
@@ -107,6 +107,19 @@ export class ReferralController {
             request.user?.userId
         );
         sendSuccess(reply, { tracked: true }, 'Click tracked successfully');
+    };
+
+    /**
+     * POST /api/referral/assign-college
+     * Body: { email, college }
+     */
+    assignCollege = async (request: AuthRequest, reply: FastifyReply) => {
+        const { email, college } = request.body as { email: string; college: string };
+        if (!email || !college) {
+            throw new AppError('Email and college are required', 400);
+        }
+        const result = await referralService.assignCollege(email, college);
+        sendSuccess(reply, result, 'Student assigned to college successfully');
     };
 }
 

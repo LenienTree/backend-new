@@ -301,6 +301,34 @@ export class ReferralService {
             })),
         };
     }
+
+    async assignCollege(email: string, college: string) {
+        const user = await prisma.user.findFirst({
+            where: {
+                email: email.trim().toLowerCase(),
+                deletedAt: null,
+            },
+        });
+        if (!user) {
+            throw new AppError('User not found. Please ensure the student has registered an account first.', 404);
+        }
+        if (user.status !== 'ACTIVE') {
+            throw new AppError('User account is blocked or inactive.', 400);
+        }
+
+        const updated = await prisma.user.update({
+            where: { id: user.id },
+            data: { college: college.trim() },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                college: true,
+            },
+        });
+
+        return updated;
+    }
 }
 
 export const referralService = new ReferralService();
