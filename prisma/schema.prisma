@@ -77,6 +77,7 @@ model GalleryImage {
 
 model Event {
   id                   String         @id @default(uuid())
+  slug                 String?        @unique
   title                String
   subtitle             String?
   category             EventCategory
@@ -263,7 +264,7 @@ enum EventCategory {
   Hackathon
   Ideathon
   Webinar
-  Conclave
+  Techfest
   Other
 }
 

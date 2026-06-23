@@ -1,7 +1,7 @@
 import { Prisma, EventStatus } from '@prisma/client';
 import { prisma } from '../config/database';
 import { AppError } from '../utils/apiResponse';
-import { getPagination, buildPaginatedResult, parseDateRange } from '../utils/helpers';
+import { getPagination, buildPaginatedResult, parseDateRange, generateUniqueSlug } from '../utils/helpers';
 import { emailEmitter, EmailEvent } from '../modules/email';
 import { config } from '../config/config';
 import { EventFilters } from '../types';
@@ -33,9 +33,15 @@ export class EventService {
     ) {
         const { location, faqs, announcements, ...eventData } = data;
 
+        const slug = await generateUniqueSlug(
+            data.title,
+            async (s) => (await prisma.event.count({ where: { slug: s } })) > 0
+        );
+
         const event = await prisma.event.create({
             data: {
                 ...eventData,
+                slug,
                 category: data.category as Prisma.EventUncheckedCreateInput['category'],
                 mode: data.mode as Prisma.EventUncheckedCreateInput['mode'],
                 prizeType: (data.prizeType || 'NONE') as Prisma.EventUncheckedCreateInput['prizeType'],
@@ -295,8 +301,9 @@ export class EventService {
     }
 
     async getEventById(eventId: string) {
-        const event = await prisma.event.findUnique({
-            where: { id: eventId, deletedAt: null },
+        // Resolve by UUID id OR short slug so both /event/:id and /e/:slug links work.
+        const event = await prisma.event.findFirst({
+            where: { OR: [{ id: eventId }, { slug: eventId }], deletedAt: null },
             include: {
                 organizer: {
                     select: {

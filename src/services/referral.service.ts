@@ -6,8 +6,32 @@ export class ReferralService {
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
+    // Short, unprefixed code (6 chars) to keep shared links compact, e.g. "9F3KQ2".
     private generateCode(): string {
-        return `REF-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        return Math.random().toString(36).substring(2, 8).toUpperCase();
+    }
+
+    // Build the short, shareable link: prefers the event slug over the UUID and
+    // uses the compact `?r=` param, e.g. https://lenienttree.com/e/hack-for-good?r=9F3KQ2
+    private buildLink(slugOrId: string, code: string, college?: string | null, name?: string | null): string {
+        let url = `${config.clientUrl}/e/${slugOrId}?r=${code}`;
+        if (college) {
+            const cleanCollege = college.trim().toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+            if (cleanCollege) {
+                url += `&utm_source=${encodeURIComponent(cleanCollege)}`;
+            }
+        }
+        if (name) {
+            const cleanName = name.trim().toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+            if (cleanName) {
+                url += `&utm_medium=${encodeURIComponent(cleanName)}`;
+            }
+        }
+        return url;
     }
 
     // ─── Admin: list distinct colleges ────────────────────────────────────────
@@ -81,8 +105,8 @@ export class ReferralService {
         if (existing) {
             return {
                 ...existing,
-                link: `${config.clientUrl}/event/${eventId}?ref=${existing.code}`,
-                referee: { id: referee.id, name: referee.name, email: referee.email },
+                link: this.buildLink(event.slug ?? eventId, existing.code, referee.college, referee.name),
+                referee: { id: referee.id, name: referee.name, email: referee.email, college: referee.college },
             };
         }
 
@@ -93,8 +117,8 @@ export class ReferralService {
 
         return {
             ...referral,
-            link: `${config.clientUrl}/event/${eventId}?ref=${referral.code}`,
-            referee: { id: referee.id, name: referee.name, email: referee.email },
+            link: this.buildLink(event.slug ?? eventId, referral.code, referee.college, referee.name),
+            referee: { id: referee.id, name: referee.name, email: referee.email, college: referee.college },
         };
     }
 
@@ -125,8 +149,8 @@ export class ReferralService {
         if (existing) {
             return {
                 ...existing,
-                link: `${config.clientUrl}/event/${eventId}?ref=${existing.code}`,
-                referee: { id: referee.id, name: referee.name, email: referee.email },
+                link: this.buildLink(event.slug ?? eventId, existing.code, referee.college, referee.name),
+                referee: { id: referee.id, name: referee.name, email: referee.email, college: referee.college },
             };
         }
 
@@ -137,8 +161,8 @@ export class ReferralService {
 
         return {
             ...referral,
-            link: `${config.clientUrl}/event/${eventId}?ref=${referral.code}`,
-            referee: { id: referee.id, name: referee.name, email: referee.email },
+            link: this.buildLink(event.slug ?? eventId, referral.code, referee.college, referee.name),
+            referee: { id: referee.id, name: referee.name, email: referee.email, college: referee.college },
         };
     }
 
@@ -170,7 +194,7 @@ export class ReferralService {
         const event = await prisma.event.findUnique({ where: { id: eventId } });
         if (!event) throw new AppError('Event not found', 404);
 
-        return this._buildStats(eventId);
+        return this._buildStats(eventId, event.slug ?? eventId);
     }
 
     // ─── Organizer stats: stats only for owned events ──────────────────────────
@@ -181,11 +205,11 @@ export class ReferralService {
             throw new AppError('You do not have access to this event\'s referral stats', 403);
         }
 
-        return this._buildStats(eventId);
+        return this._buildStats(eventId, event.slug ?? eventId);
     }
 
     // ─── Internal stats builder ───────────────────────────────────────────────
-    private async _buildStats(eventId: string) {
+    private async _buildStats(eventId: string, eventSlug: string) {
         const referrals = await prisma.referral.findMany({
             where: { eventId },
             include: {
@@ -211,7 +235,7 @@ export class ReferralService {
             referrals: referrals.map((r) => ({
                 id: r.id,
                 code: r.code,
-                link: `${config.clientUrl}/event/${eventId}?ref=${r.code}`,
+                link: this.buildLink(eventSlug, r.code, r.referrer?.college, r.referrer?.name),
                 clicks: r.clicks,
                 conversions: r.conversions,
                 createdAt: r.createdAt,
