@@ -3,7 +3,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import cookie from '@fastify/cookie';
 // @fastify/compress removed — gzip handled by Nginx (avoids premature close stream conflict)
-import rateLimit from '@fastify/rate-limit';
+// import rateLimit from '@fastify/rate-limit';
 import formbody from '@fastify/formbody';
 import multipart from '@fastify/multipart';
 import { config } from './config/config';
@@ -13,6 +13,10 @@ import { prisma } from './config/database';
 import { referralService } from './services/referral.service';
 
 const app: FastifyInstance = fastify({
+    // Behind nginx, the socket IP is always 127.0.0.1. Trusting the proxy makes
+    // request.ip resolve to the real client (from X-Forwarded-For) so per-IP
+    // rate limiting counts each user separately instead of as one shared client.
+    trustProxy: true,
     logger: config.env !== 'test' ? {
         level: config.env === 'production' ? 'info' : 'debug',
         transport: config.env !== 'production' ? {
@@ -85,10 +89,12 @@ app.register(multipart, {
 // tracks limits independently, making the effective limit (max × workers).
 // To enforce a true global limit, add Redis: npm i @fastify/redis ioredis
 // and pass `redis: redisClient` here. Acceptable trade-off on free-tier infra.
+/*
 app.register(rateLimit, {
     max: config.rateLimit.max,
     timeWindow: config.rateLimit.windowMs,
 });
+*/
 
 // ── Root Health Check ─────────────────────────────────────────────────────────
 const serverStartTime = Date.now();
