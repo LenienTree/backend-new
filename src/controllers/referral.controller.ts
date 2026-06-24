@@ -109,6 +109,13 @@ export class ReferralController {
         sendSuccess(reply, { tracked: true }, 'Click tracked successfully');
     };
 
+    /** GET /api/referral/resolve/:code — returns the full event URL for a referral code */
+    resolveCode = async (request: AuthRequest, reply: FastifyReply) => {
+        const { code } = request.params as { code: string };
+        const url = await referralService.resolveTargetUrl(code);
+        sendSuccess(reply, { url }, url ? 'Resolved' : 'Code not found');
+    };
+
     /**
      * POST /api/referral/assign-college
      * Body: { email, college }

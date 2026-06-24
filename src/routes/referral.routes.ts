@@ -40,6 +40,13 @@ export default async function referralRoutes(fastify: FastifyInstance) {
         handler: referralController.trackClick,
     });
 
+    // ── Public: resolve a short code to its full event URL ───────────────────
+    // GET /api/referral/resolve/:code
+    // Used by the frontend SPA's /r/:code route to do the redirect client-side.
+    fastify.get<{ Params: { code: string } }>('/resolve/:code', {
+        handler: referralController.resolveCode,
+    });
+
     // ─────────────────────────────────────────────────────────────────────────
     // ADMIN routes  (require ADMIN role)
     // ─────────────────────────────────────────────────────────────────────────
