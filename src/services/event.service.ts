@@ -168,10 +168,68 @@ export class EventService {
         return updated;
     }
 
+    // Fields that must never be overwritten with null/empty by a partial update —
+    // doing so would corrupt the event. Their absence in a payload means "unchanged".
+    private static readonly REQUIRED_SCALARS = [
+        'title', 'description', 'category', 'mode',
+        'startDate', 'endDate', 'registrationDeadline',
+    ] as const;
+
+    // Relations / computed fields that can't be set via a flat event.update() data object.
+    private static readonly NON_UPDATABLE_KEYS = [
+        'id', 'slug', 'organizerId', 'organizer', 'createdAt', 'updatedAt', 'deletedAt',
+        'status', 'isPremium', 'isFeatured', 'displayOrder', 'rejectionReason',
+        'faqs', 'announcements', 'registrations', 'bookmarks', 'certificates',
+        'referrals', '_count', 'location',
+    ] as const;
+
+    private static readonly DATE_FIELDS = ['startDate', 'endDate', 'registrationDeadline'] as const;
+
+    /**
+     * Build a Prisma-safe update payload from an arbitrary partial body.
+     * - Flattens a nested `location` object into venueName/address/mapLink.
+     * - Drops `undefined` values (Prisma treats them as "skip", but we strip explicitly).
+     * - Drops relation/computed keys that can't be set directly.
+     * - Refuses to null/blank out core required scalars (treats them as "unchanged").
+     * - Coerces ISO date strings into Date objects.
+     */
+    private sanitizeUpdateData(data: Record<string, any>): Prisma.EventUpdateInput {
+        const clean: Record<string, any> = {};
+
+        // Flatten nested location { venueName, address, mapLink } → scalar columns.
+        if (data.location && typeof data.location === 'object') {
+            for (const key of ['venueName', 'address', 'mapLink'] as const) {
+                if (data.location[key] !== undefined && data[key] === undefined) {
+                    data[key] = data.location[key];
+                }
+            }
+        }
+
+        for (const [key, value] of Object.entries(data)) {
+            if ((EventService.NON_UPDATABLE_KEYS as readonly string[]).includes(key)) continue;
+            if (value === undefined) continue;
+
+            // Never wipe a required scalar with null/empty — skip so the existing value stays.
+            if ((EventService.REQUIRED_SCALARS as readonly string[]).includes(key)) {
+                if (value === null || (typeof value === 'string' && value.trim() === '')) continue;
+            }
+
+            if ((EventService.DATE_FIELDS as readonly string[]).includes(key) && typeof value === 'string') {
+                const d = new Date(value);
+                if (!isNaN(d.getTime())) clean[key] = d;
+                continue;
+            }
+
+            clean[key] = value;
+        }
+
+        return clean as Prisma.EventUpdateInput;
+    }
+
     async updateEvent(eventId: string, organizerId: string, data: Partial<Prisma.EventUpdateInput>, role?: string) {
         await this.verifyOwnership(eventId, organizerId, role);
 
-        const { isPremium, isFeatured, ...updateData } = data as any;
+        const updateData = this.sanitizeUpdateData(data as Record<string, any>);
 
         const updated = await prisma.event.update({
             where: { id: eventId },
