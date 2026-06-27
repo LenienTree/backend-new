@@ -9,6 +9,7 @@ import healthRoutes from './health.routes';
 import referralRoutes from './referral.routes';
 import homepageRoutes from './homepage.routes';
 import notificationRoutes from './notification.routes';
+import contactRoutes from './contact.routes';
 
 export default async function routes(fastify: FastifyInstance) {
     fastify.register(authRoutes, { prefix: '/auth' });
@@ -21,4 +22,5 @@ export default async function routes(fastify: FastifyInstance) {
     fastify.register(referralRoutes, { prefix: '/referral' });
     fastify.register(homepageRoutes, { prefix: '/homepage' });
     fastify.register(notificationRoutes, { prefix: '/notifications' });
+    fastify.register(contactRoutes, { prefix: '/contact' });
 }
