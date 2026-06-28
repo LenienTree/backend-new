@@ -1,0 +1,54 @@
+# ── LenientTree API — nginx reverse proxy (reference) ─────────────────────────
+#
+# WHY THIS FILE EXISTS
+# --------------------
+# File uploads larger than ~1 MB (event banners/posters, avatars, gallery images,
+# UPI QR codes, homepage banner/community/testimonial images) were failing in the
+# browser with a misleading error:
+#
+#     Access to fetch at 'https://lenienttree.in/api/homepage/banners' from origin
+#     'https://lenienttree.com' has been blocked by CORS policy: No
+#     'Access-Control-Allow-Origin' header is present on the requested resource.
+#
+# Root cause: nginx's `client_max_body_size` defaults to 1 MB. When the upload body
+# exceeds it, nginx returns its own `413 Request Entity Too Large` page *before*
+# proxying to the Node/Fastify app. That proxy-generated 413 carries no CORS headers,
+# so the browser reports it as a CORS failure instead of a size error. The app itself
+# (Fastify @fastify/multipart) already allows 10 MB — the proxy was the bottleneck.
+#
+# FIX: set `client_max_body_size` on the proxy to at least the app's multipart limit
+# (10 MB) plus a little headroom for multipart encoding overhead. We use 12 MB below.
+#
+# After editing: `sudo nginx -t && sudo systemctl reload nginx`
+
+server {
+    listen 443 ssl http2;
+    server_name lenienttree.in www.lenienttree.in;
+
+    # ssl_certificate / ssl_certificate_key managed by certbot (or your TLS setup)
+
+    # ── The critical directive ────────────────────────────────────────────────
+    # Must be >= the Fastify multipart limit (10 MB, see src/app.ts). Without this,
+    # large uploads are rejected at the proxy with a CORS-less 413.
+    client_max_body_size 12M;
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Let the app own CORS headers (do NOT add add_header Access-Control-* here,
+        # or you risk duplicate/!=origin headers). The app reflects the request
+        # Origin per its allow-list in src/app.ts.
+
+        # gzip is handled here at the nginx layer (compression was removed from Node
+        # to avoid premature-close issues behind the proxy).
+        gzip on;
+        gzip_proxied any;
+        gzip_types application/json text/plain text/css application/javascript application/xml;
+    }
+}
