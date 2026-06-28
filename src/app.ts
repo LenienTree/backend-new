@@ -48,7 +48,7 @@ const allowedOrigins = [
     'https://www.lenienttree.in',
     'http://localhost:3000',
     'http://localhost:5173',
-];
+].filter(Boolean);
 
 app.register(cors, {
     origin: (origin, callback) => {
@@ -63,7 +63,7 @@ app.register(cors, {
         if (isAllowed) {
             callback(null, true);
         } else {
-            callback(new Error(`CORS: origin '${origin}' is not allowed`), false);
+            callback(null, false);
         }
     },
     credentials: true,
