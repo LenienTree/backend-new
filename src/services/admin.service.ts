@@ -113,6 +113,22 @@ export class AdminService {
                     isOrganizer: true,
                     status: true,
                     createdAt: true,
+                    phone: true,
+                    college: true,
+                    graduationYear: true,
+                    dateOfBirth: true,
+                    bio: true,
+                    profileImage: true,
+                    isEmailVerified: true,
+                    googleId: true,
+                    internshipInterest: true,
+                    internshipDomains: true,
+                    socialLinks: true,
+                    skills: {
+                        select: {
+                            skill: true,
+                        },
+                    },
                     _count: {
                         select: { organizedEvents: true, registrations: true },
                     },
