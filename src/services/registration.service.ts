@@ -277,7 +277,19 @@ export class RegistrationService {
         };
     }
 
-    async markAttended(registrationId: string) {
+    async markAttended(registrationId: string, requesterId: string, requesterRole: string) {
+        const reg = await prisma.registration.findUnique({
+            where: { id: registrationId },
+            include: {
+                event: { select: { organizerId: true } },
+            },
+        });
+
+        if (!reg) throw new AppError('Registration not found.', 404);
+        if (requesterRole !== 'ADMIN' && reg.event.organizerId !== requesterId) {
+            throw new AppError('Not authorized.', 403);
+        }
+
         const updated = await prisma.registration.update({
             where: { id: registrationId },
             data: { status: 'ATTENDED' },

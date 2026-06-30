@@ -50,6 +50,11 @@ export class AdminController {
         sendSuccess(reply, logs);
     };
 
+    getAnalytics = async (_request: AuthRequest, reply: FastifyReply) => {
+        const result = await adminService.getAnalytics();
+        sendSuccess(reply, result);
+    };
+
     getOrganizerRequests = async (request: AuthRequest, reply: FastifyReply) => {
         const requests = await adminService.getOrganizerRequests();
         sendSuccess(reply, requests);
@@ -100,6 +105,14 @@ export class AdminController {
         });
 
         sendSuccess(reply, user, 'Organizer approved successfully.');
+    };
+
+    getAllEvents = async (request: AuthRequest, reply: FastifyReply) => {
+        const { page, limit, status, search } = request.query as {
+            page?: string; limit?: string; status?: string; search?: string;
+        };
+        const data = await adminService.getAllEvents(page, limit, status, search);
+        sendSuccess(reply, data);
     };
 
     updateEventsOrder = async (request: AuthRequest, reply: FastifyReply) => {

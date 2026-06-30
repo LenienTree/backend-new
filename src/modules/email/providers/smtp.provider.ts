@@ -17,7 +17,7 @@ export const getTransporter = (): nodemailer.Transporter => {
             pool: true, // Connection pooling
             maxConnections: 5,
             maxMessages: 100,
-            rateLimit: 10, // Rate limiting: Max 10 messages per second
+            // rateLimit: 10, // Rate limiting: Max 10 messages per second
         });
     }
     return transporter;

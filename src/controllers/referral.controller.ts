@@ -1,6 +1,6 @@
 import { FastifyReply } from 'fastify';
 import { referralService } from '../services/referral.service';
-import { sendSuccess } from '../utils/apiResponse';
+import { sendSuccess, AppError } from '../utils/apiResponse';
 import { AuthRequest } from '../types';
 
 export class ReferralController {
@@ -22,14 +22,15 @@ export class ReferralController {
 
     /**
      * POST /api/referral/admin/generate
-     * Body: { eventId, refereeUserId }
+     * Body: { eventId, refereeUserId, college }
      */
     adminGenerateReferral = async (request: AuthRequest, reply: FastifyReply) => {
-        const { eventId, refereeUserId } = request.body as {
+        const { eventId, refereeUserId, college } = request.body as {
             eventId: string;
-            refereeUserId: string;
+            refereeUserId?: string;
+            college?: string;
         };
-        const result = await referralService.adminGenerateReferral(eventId, refereeUserId);
+        const result = await referralService.adminGenerateReferral(eventId, refereeUserId, college);
         sendSuccess(reply, result, 'Referral link generated');
     };
 
@@ -64,18 +65,20 @@ export class ReferralController {
 
     /**
      * POST /api/referral/organizer/generate
-     * Body: { eventId, refereeUserId }
+     * Body: { eventId, refereeUserId, college }
      */
     organizerGenerateReferral = async (request: AuthRequest, reply: FastifyReply) => {
-        const { eventId, refereeUserId } = request.body as {
+        const { eventId, refereeUserId, college } = request.body as {
             eventId: string;
-            refereeUserId: string;
+            refereeUserId?: string;
+            college?: string;
         };
         const organizerId = request.user!.userId;
         const result = await referralService.organizerGenerateReferral(
             eventId,
             organizerId,
-            refereeUserId
+            refereeUserId,
+            college
         );
         sendSuccess(reply, result, 'Referral link generated');
     };
@@ -104,6 +107,26 @@ export class ReferralController {
             request.user?.userId
         );
         sendSuccess(reply, { tracked: true }, 'Click tracked successfully');
+    };
+
+    /** GET /api/referral/resolve/:code — returns the full event URL for a referral code */
+    resolveCode = async (request: AuthRequest, reply: FastifyReply) => {
+        const { code } = request.params as { code: string };
+        const url = await referralService.resolveTargetUrl(code);
+        sendSuccess(reply, { url }, url ? 'Resolved' : 'Code not found');
+    };
+
+    /**
+     * POST /api/referral/assign-college
+     * Body: { email, college }
+     */
+    assignCollege = async (request: AuthRequest, reply: FastifyReply) => {
+        const { email, college, name } = request.body as { email: string; college: string; name?: string };
+        if (!email || !college) {
+            throw new AppError('Email and college are required', 400);
+        }
+        const result = await referralService.assignCollege(email, college, name);
+        sendSuccess(reply, result, name ? 'Student registered and assigned to college successfully' : 'Student assigned to college successfully');
     };
 }
 

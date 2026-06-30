@@ -71,7 +71,7 @@ export class AuthController {
 
         const result = await authService.refreshTokens(refreshToken);
         setAuthCookies(reply, result.accessToken, result.refreshToken);
-        sendSuccess(reply, null, 'Token refreshed');
+        sendSuccess(reply, result, 'Token refreshed');
     };
 
     forgotPassword = async (request: FastifyRequest, reply: FastifyReply) => {

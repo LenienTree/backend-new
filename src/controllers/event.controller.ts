@@ -1,4 +1,4 @@
-import { FastifyReply } from 'fastify';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { eventService } from '../services/event.service';
 import { sendSuccess, sendCreated } from '../utils/apiResponse';
 import { AuthRequest } from '../types';
@@ -145,6 +145,16 @@ export class EventController {
             reason
         );
         sendSuccess(reply, event, 'Event rejected');
+    };
+
+    getEventStats = async (request: AuthRequest, reply: FastifyReply) => {
+        const stats = await eventService.getEventStats((request.params as any).id as string);
+        sendSuccess(reply, stats);
+    };
+
+    getShareData = async (request: FastifyRequest, reply: FastifyReply) => {
+        const data = await eventService.getShareData((request.params as any).id as string);
+        sendSuccess(reply, data);
     };
 }
 

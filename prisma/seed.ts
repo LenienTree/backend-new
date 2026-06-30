@@ -299,7 +299,7 @@ async function main() {
         data: {
             title: "CyberSec Conclave 2026",
             subtitle: "Ethical Hacking & Pen-Testing Deep Dive",
-            category: EventCategory.Conclave,
+            category: EventCategory.Techfest,
             organizerId: org3.id,
             mode: EventMode.ONLINE,
             startDate: new Date("2026-04-20T14:00:00Z"),

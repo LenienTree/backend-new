@@ -1,10 +1,15 @@
-import { FastifyReply } from 'fastify';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { userService } from '../services/user.service';
 import { sendSuccess } from '../utils/apiResponse';
 import { AuthRequest } from '../types';
 import { uploadToS3 } from '../utils/upload';
 
 export class UserController {
+    getPublicProfile = async (request: FastifyRequest, reply: FastifyReply) => {
+        const user = await userService.getPublicProfile((request.params as any).id as string);
+        sendSuccess(reply, user);
+    };
+
     getMe = async (request: AuthRequest, reply: FastifyReply) => {
         const user = await userService.getMe(request.user!.userId);
         sendSuccess(reply, user);

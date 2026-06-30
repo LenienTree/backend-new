@@ -31,7 +31,8 @@ describe('Event API', () => {
 
     describe('GET /api/events/:id', () => {
         test('should return 404 if event not found', async () => {
-            (prisma.event.findUnique as jest.Mock).mockResolvedValue(null);
+            // getEventById resolves by id OR slug via findFirst
+            (prisma.event.findFirst as jest.Mock).mockResolvedValue(null);
 
             const response = await app.inject({
                 method: 'GET',
@@ -42,7 +43,7 @@ describe('Event API', () => {
         });
 
         test('should return event details if found', async () => {
-            (prisma.event.findUnique as jest.Mock).mockResolvedValue({
+            (prisma.event.findFirst as jest.Mock).mockResolvedValue({
                 id: '1',
                 title: 'Test Event',
                 status: 'APPROVED',

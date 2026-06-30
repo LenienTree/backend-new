@@ -348,6 +348,58 @@ export class UserService {
             data: { deletedAt: new Date() },
         });
     }
+
+    async getPublicProfile(userId: string) {
+        const user = await prisma.user.findUnique({
+            where: { id: userId, deletedAt: null, status: 'ACTIVE' },
+            select: {
+                id: true,
+                name: true,
+                bio: true,
+                profileImage: true,
+                college: true,
+                graduationYear: true,
+                isOrganizer: true,
+                createdAt: true,
+                socialLinks: {
+                    select: {
+                        linkedin: true,
+                        github: true,
+                        instagram: true,
+                        twitter: true,
+                        website: true,
+                    },
+                },
+                skills: { select: { skill: true } },
+                certificates: {
+                    include: { event: { select: { id: true, title: true } } },
+                    take: 10,
+                },
+                organizedEvents: {
+                    where: { status: 'APPROVED', deletedAt: null },
+                    select: {
+                        id: true,
+                        title: true,
+                        category: true,
+                        bannerImage: true,
+                        startDate: true,
+                        _count: { select: { registrations: true } },
+                    },
+                    orderBy: { startDate: 'desc' },
+                    take: 6,
+                },
+                _count: {
+                    select: {
+                        organizedEvents: true,
+                        certificates: true,
+                    },
+                },
+            },
+        });
+
+        if (!user) throw new AppError('User not found.', 404);
+        return user;
+    }
 }
 
 export const userService = new UserService();

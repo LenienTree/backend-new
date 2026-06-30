@@ -1,7 +1,7 @@
 import { Prisma, EventStatus } from '@prisma/client';
 import { prisma } from '../config/database';
 import { AppError } from '../utils/apiResponse';
-import { getPagination, buildPaginatedResult, parseDateRange } from '../utils/helpers';
+import { getPagination, buildPaginatedResult, parseDateRange, generateUniqueSlug } from '../utils/helpers';
 import { emailEmitter, EmailEvent } from '../modules/email';
 import { config } from '../config/config';
 import { EventFilters } from '../types';
@@ -33,9 +33,15 @@ export class EventService {
     ) {
         const { location, faqs, announcements, ...eventData } = data;
 
+        const slug = await generateUniqueSlug(
+            data.title,
+            async (s) => (await prisma.event.count({ where: { slug: s } })) > 0
+        );
+
         const event = await prisma.event.create({
             data: {
                 ...eventData,
+                slug,
                 category: data.category as Prisma.EventUncheckedCreateInput['category'],
                 mode: data.mode as Prisma.EventUncheckedCreateInput['mode'],
                 prizeType: (data.prizeType || 'NONE') as Prisma.EventUncheckedCreateInput['prizeType'],
@@ -162,10 +168,68 @@ export class EventService {
         return updated;
     }
 
+    // Fields that must never be overwritten with null/empty by a partial update —
+    // doing so would corrupt the event. Their absence in a payload means "unchanged".
+    private static readonly REQUIRED_SCALARS = [
+        'title', 'description', 'category', 'mode',
+        'startDate', 'endDate', 'registrationDeadline',
+    ] as const;
+
+    // Relations / computed fields that can't be set via a flat event.update() data object.
+    private static readonly NON_UPDATABLE_KEYS = [
+        'id', 'slug', 'organizerId', 'organizer', 'createdAt', 'updatedAt', 'deletedAt',
+        'status', 'isPremium', 'isFeatured', 'displayOrder', 'rejectionReason',
+        'faqs', 'announcements', 'registrations', 'bookmarks', 'certificates',
+        'referrals', '_count', 'location',
+    ] as const;
+
+    private static readonly DATE_FIELDS = ['startDate', 'endDate', 'registrationDeadline'] as const;
+
+    /**
+     * Build a Prisma-safe update payload from an arbitrary partial body.
+     * - Flattens a nested `location` object into venueName/address/mapLink.
+     * - Drops `undefined` values (Prisma treats them as "skip", but we strip explicitly).
+     * - Drops relation/computed keys that can't be set directly.
+     * - Refuses to null/blank out core required scalars (treats them as "unchanged").
+     * - Coerces ISO date strings into Date objects.
+     */
+    private sanitizeUpdateData(data: Record<string, any>): Prisma.EventUpdateInput {
+        const clean: Record<string, any> = {};
+
+        // Flatten nested location { venueName, address, mapLink } → scalar columns.
+        if (data.location && typeof data.location === 'object') {
+            for (const key of ['venueName', 'address', 'mapLink'] as const) {
+                if (data.location[key] !== undefined && data[key] === undefined) {
+                    data[key] = data.location[key];
+                }
+            }
+        }
+
+        for (const [key, value] of Object.entries(data)) {
+            if ((EventService.NON_UPDATABLE_KEYS as readonly string[]).includes(key)) continue;
+            if (value === undefined) continue;
+
+            // Never wipe a required scalar with null/empty — skip so the existing value stays.
+            if ((EventService.REQUIRED_SCALARS as readonly string[]).includes(key)) {
+                if (value === null || (typeof value === 'string' && value.trim() === '')) continue;
+            }
+
+            if ((EventService.DATE_FIELDS as readonly string[]).includes(key) && typeof value === 'string') {
+                const d = new Date(value);
+                if (!isNaN(d.getTime())) clean[key] = d;
+                continue;
+            }
+
+            clean[key] = value;
+        }
+
+        return clean as Prisma.EventUpdateInput;
+    }
+
     async updateEvent(eventId: string, organizerId: string, data: Partial<Prisma.EventUpdateInput>, role?: string) {
         await this.verifyOwnership(eventId, organizerId, role);
 
-        const { isPremium, isFeatured, ...updateData } = data as any;
+        const updateData = this.sanitizeUpdateData(data as Record<string, any>);
 
         const updated = await prisma.event.update({
             where: { id: eventId },
@@ -235,9 +299,7 @@ export class EventService {
         const where: Prisma.EventWhereInput = {
             deletedAt: null,
             ...(category && { category: category as Prisma.EventWhereInput['category'] }),
-            ...(status
-                ? { status: status as EventStatus }
-                : { status: 'APPROVED' }),
+            ...(status ? { status: status as EventStatus } : {}),
             ...(search && {
                 OR: [
                     { title: { contains: search, mode: 'insensitive' } },
@@ -297,8 +359,9 @@ export class EventService {
     }
 
     async getEventById(eventId: string) {
-        const event = await prisma.event.findUnique({
-            where: { id: eventId, deletedAt: null },
+        // Resolve by UUID id OR short slug so both /event/:id and /e/:slug links work.
+        const event = await prisma.event.findFirst({
+            where: { OR: [{ id: eventId }, { slug: eventId }], deletedAt: null },
             include: {
                 organizer: {
                     select: {
@@ -313,11 +376,18 @@ export class EventService {
                 announcements: {
                     orderBy: { publishDate: 'desc' },
                     include: {
-                        creator: { select: { id: true, name: true, profileImage: true } },
+                        // Use optional include — creator user may have been soft/hard deleted
+                        creator: {
+                            select: { id: true, name: true, profileImage: true },
+                        },
                     },
                 },
                 _count: { select: { registrations: true } },
             },
+        }).catch((err) => {
+            // Surface the real DB error as an AppError so it returns 500 with a message
+            // rather than an unhandled rejection with no context
+            throw new AppError(`Failed to fetch event: ${err?.message ?? 'Database error'}`, 500);
         });
 
         if (!event) throw new AppError('Event not found.', 404);
@@ -443,6 +513,103 @@ export class EventService {
         }
 
         return event;
+    }
+
+    async getEventStats(eventId: string) {
+        const event = await prisma.event.findUnique({
+            where: { id: eventId, deletedAt: null },
+            select: {
+                id: true,
+                title: true,
+                maxParticipants: true,
+                ticketPrice: true,
+                isPaid: true,
+                startDate: true,
+                registrationDeadline: true,
+            },
+        });
+        if (!event) throw new AppError('Event not found.', 404);
+
+        const [total, approved, pending, rejected, attended, paid] = await Promise.all([
+            prisma.registration.count({ where: { eventId } }),
+            prisma.registration.count({ where: { eventId, status: 'APPROVED' } }),
+            prisma.registration.count({ where: { eventId, status: 'PENDING' } }),
+            prisma.registration.count({ where: { eventId, status: 'REJECTED' } }),
+            prisma.registration.count({ where: { eventId, status: 'ATTENDED' } }),
+            prisma.registration.count({ where: { eventId, paymentStatus: 'PAID' } }),
+        ]);
+
+        const revenue = paid * (event.ticketPrice || 0);
+        const capacityPercent = event.maxParticipants
+            ? Math.round((approved / event.maxParticipants) * 100)
+            : null;
+        const deadlineMs = event.registrationDeadline
+            ? event.registrationDeadline.getTime() - Date.now()
+            : null;
+        const isDeadlinePassed = deadlineMs !== null && deadlineMs < 0;
+
+        return {
+            eventId,
+            title: event.title,
+            registrations: { total, approved, pending, rejected, attended },
+            payments: { paid, revenue },
+            capacity: {
+                max: event.maxParticipants,
+                filled: approved,
+                percent: capacityPercent,
+                isFull: event.maxParticipants ? approved >= event.maxParticipants : false,
+            },
+            deadline: {
+                date: event.registrationDeadline,
+                isPassed: isDeadlinePassed,
+                remainingMs: isDeadlinePassed ? 0 : deadlineMs,
+            },
+        };
+    }
+
+    async getShareData(eventId: string) {
+        const event = await prisma.event.findUnique({
+            where: { id: eventId, deletedAt: null },
+            select: {
+                id: true,
+                title: true,
+                subtitle: true,
+                description: true,
+                category: true,
+                mode: true,
+                startDate: true,
+                bannerImage: true,
+                eventPoster: true,
+                organizer: { select: { name: true } },
+            },
+        });
+        if (!event) throw new AppError('Event not found.', 404);
+
+        const baseUrl = config.clientUrl;
+        const eventUrl = `${baseUrl}/event/${event.id}`;
+        const image = event.bannerImage || event.eventPoster || `${baseUrl}/og-default.png`;
+        const title = event.title;
+        const description = (event.subtitle || event.description || '').slice(0, 160);
+
+        return {
+            url: eventUrl,
+            title,
+            description,
+            image,
+            shareLinks: {
+                twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${title} on LenientTree!`)}&url=${encodeURIComponent(eventUrl)}`,
+                linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(eventUrl)}`,
+                whatsapp: `https://wa.me/?text=${encodeURIComponent(`${title} - ${eventUrl}`)}`,
+                facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(eventUrl)}`,
+            },
+            og: {
+                title,
+                description,
+                image,
+                url: eventUrl,
+                type: 'website',
+            },
+        };
     }
 }
 

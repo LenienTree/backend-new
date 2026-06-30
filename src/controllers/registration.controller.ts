@@ -97,7 +97,9 @@ export class RegistrationController {
 
     markAttended = async (request: AuthRequest, reply: FastifyReply) => {
         const result = await registrationService.markAttended(
-            (request.params as any).registrationId as string
+            (request.params as any).registrationId as string,
+            request.user!.userId,
+            request.user!.role
         );
         sendSuccess(reply, result, 'Marked as attended');
     };

@@ -13,12 +13,20 @@ const trackClickSchema = z.object({
 
 const adminGenerateSchema = z.object({
     eventId: z.string().uuid('Invalid event ID'),
-    refereeUserId: z.string().uuid('Invalid referee user ID'),
+    refereeUserId: z.string().uuid('Invalid referee user ID').nullable().optional(),
+    college: z.string().min(1, 'College name is required').nullable().optional(),
+}).refine(data => data.refereeUserId || data.college, {
+    message: "Either refereeUserId or college must be provided",
+    path: ["refereeUserId", "college"]
 });
 
 const organizerGenerateSchema = z.object({
     eventId: z.string().uuid('Invalid event ID'),
-    refereeUserId: z.string().uuid('Invalid referee user ID'),
+    refereeUserId: z.string().uuid('Invalid referee user ID').nullable().optional(),
+    college: z.string().min(1, 'College name is required').nullable().optional(),
+}).refine(data => data.refereeUserId || data.college, {
+    message: "Either refereeUserId or college must be provided",
+    path: ["refereeUserId", "college"]
 });
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
@@ -30,6 +38,13 @@ export default async function referralRoutes(fastify: FastifyInstance) {
     fastify.post('/click', {
         preHandler: [optionalAuth, validate(trackClickSchema)],
         handler: referralController.trackClick,
+    });
+
+    // ── Public: resolve a short code to its full event URL ───────────────────
+    // GET /api/referral/resolve/:code
+    // Used by the frontend SPA's /r/:code route to do the redirect client-side.
+    fastify.get<{ Params: { code: string } }>('/resolve/:code', {
+        handler: referralController.resolveCode,
     });
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -57,6 +72,16 @@ export default async function referralRoutes(fastify: FastifyInstance) {
             auditLog('ADMIN_GENERATE_REFERRAL', 'Referral'),
         ],
         handler: referralController.adminGenerateReferral,
+    });
+
+    // ASSIGN: POST /api/referral/admin/assign-college
+    fastify.post('/admin/assign-college', {
+        preHandler: [
+            authenticate,
+            authorize('ADMIN'),
+            auditLog('ADMIN_ASSIGN_COLLEGE', 'User'),
+        ],
+        handler: referralController.assignCollege,
     });
 
     // GET /api/referral/admin/stats/:eventId
@@ -100,6 +125,16 @@ export default async function referralRoutes(fastify: FastifyInstance) {
             auditLog('ORGANIZER_GENERATE_REFERRAL', 'Referral'),
         ],
         handler: referralController.organizerGenerateReferral,
+    });
+
+    // ASSIGN: POST /api/referral/organizer/assign-college
+    fastify.post('/organizer/assign-college', {
+        preHandler: [
+            authenticate,
+            requireOrganizer,
+            auditLog('ORGANIZER_ASSIGN_COLLEGE', 'User'),
+        ],
+        handler: referralController.assignCollege,
     });
 
     // TRACK: GET /api/referral/organizer/stats/:eventId

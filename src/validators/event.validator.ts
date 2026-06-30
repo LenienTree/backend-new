@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const createEventStep1Schema = z.object({
     title: z.string().min(3, 'Title must be at least 3 characters').max(200),
     subtitle: z.string().max(300).optional(),
-    category: z.enum(['Hackathon', 'Ideathon', 'Webinar', 'Conclave', 'Other']),
+    category: z.enum(['Hackathon', 'Ideathon', 'Webinar', 'Techfest', 'Other']),
     theme: z.string().max(200).optional(),
     mode: z.enum(['ONLINE', 'OFFLINE']),
     location: z
@@ -90,7 +90,7 @@ export const updateEventSchema = createEventStep1Schema.partial().merge(
 });
 
 export const eventFiltersSchema = z.object({
-    category: z.enum(['Hackathon', 'Ideathon', 'Webinar', 'Conclave', 'Other']).optional(),
+    category: z.enum(['Hackathon', 'Ideathon', 'Webinar', 'Techfest', 'Other']).optional(),
     month: z.string().regex(/^\d{4}-\d{2}$/, 'Format: YYYY-MM').optional(),
     status: z.enum(['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'COMPLETED']).optional(),
     search: z.string().max(100).optional(),

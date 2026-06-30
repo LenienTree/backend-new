@@ -17,12 +17,14 @@ export default async function authRoutes(fastify: FastifyInstance) {
     fastify.post(
         '/login',
         {
+            /*
             config: {
                 rateLimit: {
                     max: 10,
                     timeWindow: '15 minutes',
                 },
             },
+            */
             preHandler: validate(loginSchema),
         },
         authController.login

@@ -5,7 +5,11 @@ import { validate } from '../middleware/validate.middleware';
 import { updateProfileSchema, changePasswordSchema, becomeOrganizerSchema } from '../validators/user.validator';
 
 export default async function userRoutes(fastify: FastifyInstance) {
-    // All user routes require authentication
+    // ── Public routes (no auth required) ────────────────────────────────────
+    // GET /api/users/:id/public
+    fastify.get('/:id/public', userController.getPublicProfile);
+
+    // All other user routes require authentication
     fastify.addHook('preHandler', authenticate);
 
     // GET /api/users/me
