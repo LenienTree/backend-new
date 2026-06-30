@@ -245,6 +245,84 @@ export class AdminService {
         await prisma.$transaction(updates);
         return { success: true };
     }
+
+    async getInternshipSurveyResponses(page = '1', limit = '15', search?: string) {
+        const { skip, page: p, limit: l } = getPagination(page, limit);
+
+        const where = {
+            deletedAt: null,
+            internshipInterest: { not: null },
+            ...(search && {
+                OR: [
+                    { name: { contains: search, mode: 'insensitive' as const } },
+                    { email: { contains: search, mode: 'insensitive' as const } },
+                ],
+            }),
+        };
+
+        const [users, total, totalInterested, totalNotInterested, surveySection] = await Promise.all([
+            prisma.user.findMany({
+                where,
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    internshipInterest: true,
+                    internshipDomains: true,
+                    createdAt: true,
+                },
+                skip,
+                take: l,
+                orderBy: { updatedAt: 'desc' },
+            }),
+            prisma.user.count({ where }),
+            prisma.user.count({ where: { deletedAt: null, internshipInterest: true } }),
+            prisma.user.count({ where: { deletedAt: null, internshipInterest: false } }),
+            prisma.homepageSection.findUnique({ where: { key: 'internship_survey' } }),
+        ]);
+
+        // Aggregate domains counts
+        const interestedUsers = await prisma.user.findMany({
+            where: { deletedAt: null, internshipInterest: true },
+            select: { internshipDomains: true }
+        });
+
+        const domainCounts: Record<string, number> = {};
+        interestedUsers.forEach(u => {
+            u.internshipDomains.forEach(domain => {
+                domainCounts[domain] = (domainCounts[domain] || 0) + 1;
+            });
+        });
+
+        const paginatedResult = buildPaginatedResult(users, total, p, l);
+        const enabled = surveySection ? surveySection.visible : true;
+
+        return {
+            ...paginatedResult,
+            enabled,
+            stats: {
+                total,
+                interested: totalInterested,
+                notInterested: totalNotInterested,
+                domainCounts,
+            }
+        };
+    }
+
+    async toggleInternshipSurvey() {
+        let section = await prisma.homepageSection.findUnique({
+            where: { key: 'internship_survey' }
+        });
+        if (!section) {
+            section = await prisma.homepageSection.create({
+                data: { key: 'internship_survey', title: 'Internship Survey Feature', order: 5, visible: true }
+            });
+        }
+        return prisma.homepageSection.update({
+            where: { key: 'internship_survey' },
+            data: { visible: !section.visible }
+        });
+    }
 }
 
 export const adminService = new AdminService();

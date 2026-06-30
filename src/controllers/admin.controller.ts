@@ -107,6 +107,21 @@ export class AdminController {
         const result = await adminService.updateEventsOrder(events);
         sendSuccess(reply, result, 'Events order updated');
     };
+
+    getInternshipSurveyResponses = async (request: AuthRequest, reply: FastifyReply) => {
+        const { page, limit, search } = request.query as {
+            page?: string;
+            limit?: string;
+            search?: string;
+        };
+        const data = await adminService.getInternshipSurveyResponses(page, limit, search);
+        sendSuccess(reply, data, 'Internship survey responses');
+    };
+
+    toggleInternshipSurvey = async (request: AuthRequest, reply: FastifyReply) => {
+        const result = await adminService.toggleInternshipSurvey();
+        sendSuccess(reply, result, 'Internship survey feature toggled');
+    };
 }
 
 export const adminController = new AdminController();
