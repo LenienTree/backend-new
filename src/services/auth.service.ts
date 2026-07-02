@@ -60,6 +60,7 @@ export class AuthService {
                 internshipInterest: true,
                 internshipDomains: true,
                 dateOfBirth: true,
+                googleId: true,
             },
         });
 
@@ -132,6 +133,7 @@ export class AuthService {
                 internshipInterest: true,
                 internshipDomains: true,
                 dateOfBirth: true,
+                googleId: true,
             },
         });
 
@@ -219,6 +221,7 @@ export class AuthService {
                 internshipInterest: user.internshipInterest,
                 internshipDomains: user.internshipDomains,
                 dateOfBirth: user.dateOfBirth,
+                googleId: user.googleId,
             },
             accessToken: generateAccessToken(payload),
             refreshToken: generateRefreshToken(payload),

@@ -29,6 +29,7 @@ export class UserService {
                 internshipDomains: true,
                 skills: { select: { skill: true } },
                 galleryImages: true,
+                googleId: true,
                 certificates: {
                     include: { event: { select: { id: true, title: true } } },
                 },
