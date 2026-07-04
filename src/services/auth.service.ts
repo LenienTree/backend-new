@@ -22,6 +22,7 @@ export class AuthService {
         graduationYear?: number;
         currentRole?: string;
         referralCode?: string;
+        interests?: string[];
         dateOfBirth: string;
     }) {
         const existing = await prisma.user.findFirst({
@@ -46,6 +47,7 @@ export class AuthService {
                 graduationYear: data.graduationYear,
                 currentRole: data.currentRole,
                 passwordHash,
+                interests: data.interests ?? [],
                 dateOfBirth: new Date(data.dateOfBirth),
                 socialLinks: { create: {} },
             },
@@ -65,6 +67,7 @@ export class AuthService {
                 createdAt: true,
                 internshipInterest: true,
                 internshipDomains: true,
+                interests: true,
                 dateOfBirth: true,
                 googleId: true,
             },
@@ -142,6 +145,7 @@ export class AuthService {
                 profileImage: true,
                 internshipInterest: true,
                 internshipDomains: true,
+                interests: true,
                 dateOfBirth: true,
                 googleId: true,
             },
@@ -234,6 +238,7 @@ export class AuthService {
                 profileImage: user.profileImage,
                 internshipInterest: user.internshipInterest,
                 internshipDomains: user.internshipDomains,
+                interests: user.interests,
                 dateOfBirth: user.dateOfBirth,
                 googleId: user.googleId,
             },

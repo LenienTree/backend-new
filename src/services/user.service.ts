@@ -28,6 +28,7 @@ export class UserService {
                 socialLinks: true,
                 internshipInterest: true,
                 internshipDomains: true,
+                interests: true,
                 skills: { select: { skill: true } },
                 galleryImages: true,
                 googleId: true,
@@ -96,6 +97,7 @@ export class UserService {
             };
             internshipInterest?: boolean;
             internshipDomains?: string[];
+            interests?: string[];
             dateOfBirth?: Date | string;
         }
     ) {
@@ -137,6 +139,7 @@ export class UserService {
                 skills: { select: { skill: true } },
                 internshipInterest: true,
                 internshipDomains: true,
+                interests: true,
                 dateOfBirth: true,
             },
         });

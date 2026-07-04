@@ -127,12 +127,16 @@ export class EventService {
         });
     }
 
+    // Only these categories go through admin approval. Everything else
+    // (Webinar, Techfest, Other) is published live immediately on submit.
+    private static readonly APPROVAL_CATEGORIES = ['Hackathon', 'Ideathon'] as const;
+
     async submitForApproval(eventId: string, organizerId: string, role?: string) {
         await this.verifyOwnership(eventId, organizerId, role);
 
-        const event = await prisma.event.findUnique({ 
+        const event = await prisma.event.findUnique({
             where: { id: eventId },
-            include: { organizer: { select: { name: true } } }
+            include: { organizer: { select: { name: true, email: true } } }
         });
         if (!event) throw new AppError('Event not found.', 404);
 
@@ -141,6 +145,28 @@ export class EventService {
                 'Event can only be submitted from DRAFT or REJECTED status.',
                 400
             );
+        }
+
+        const needsApproval = (EventService.APPROVAL_CATEGORIES as readonly string[])
+            .includes(event.category);
+
+        // Non-approval categories are published straight to APPROVED (live on the
+        // Explore page). They stay off the landing page until an admin flips the
+        // showOnLanding toggle.
+        if (!needsApproval) {
+            const updated = await prisma.event.update({
+                where: { id: eventId },
+                data: { status: 'APPROVED' },
+            });
+
+            emailEmitter.emitAsync(EmailEvent.EVENT_APPROVED, {
+                email: event.organizer.email,
+                organizerName: event.organizer.name,
+                eventTitle: event.title,
+                eventUrl: `${config.clientUrl}/event/${updated.slug || updated.id}`
+            });
+
+            return updated;
         }
 
         const updated = await prisma.event.update({
@@ -337,6 +363,7 @@ export class EventService {
                     maxParticipants: true,
                     isFeatured: true,
                     isPremium: true,
+                    showOnLanding: true,
                     requiresLinkedinShare: true,
                     linkedinShareDescription: true,
                     linkedinSharePoster: true,

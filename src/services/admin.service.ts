@@ -12,6 +12,7 @@ export class AdminService {
             approvedRegistrations,
             recentEvents,
             recentUsers,
+            usersWithInterests,
         ] = await Promise.all([
             prisma.user.count({ where: { deletedAt: null } }),
             prisma.event.count({ where: { deletedAt: null } }),
@@ -37,7 +38,22 @@ export class AdminService {
                 take: 5,
                 select: { id: true, name: true, email: true, role: true, createdAt: true },
             }),
+            prisma.user.findMany({
+                where: { deletedAt: null },
+                select: { interests: true },
+            }),
         ]);
+
+        const interestCounts = usersWithInterests.reduce<Record<string, number>>((acc, user) => {
+            for (const interest of user.interests || []) {
+                acc[interest] = (acc[interest] || 0) + 1;
+            }
+            return acc;
+        }, {});
+
+        const interestStats = Object.entries(interestCounts)
+            .map(([label, count]) => ({ label, count }))
+            .sort((a, b) => b.count - a.count);
 
         // Revenue: Count paid registrations and join event ticketPrice
         const paidRegistrations = await prisma.registration.findMany({
@@ -64,6 +80,7 @@ export class AdminService {
             },
             recentEvents,
             recentUsers,
+            interestStats,
         };
     }
 
@@ -123,6 +140,7 @@ export class AdminService {
                     googleId: true,
                     internshipInterest: true,
                     internshipDomains: true,
+                    interests: true,
                     socialLinks: true,
                     skills: {
                         select: {
@@ -202,6 +220,17 @@ export class AdminService {
             where: { id: eventId },
             data: { isPremium },
             select: { id: true, title: true, isPremium: true },
+        });
+    }
+
+    async toggleShowOnLandingEvent(eventId: string, showOnLanding: boolean) {
+        const event = await prisma.event.findUnique({ where: { id: eventId } });
+        if (!event) throw new AppError('Event not found.', 404);
+
+        return prisma.event.update({
+            where: { id: eventId },
+            data: { showOnLanding },
+            select: { id: true, title: true, showOnLanding: true },
         });
     }
 

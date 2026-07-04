@@ -20,6 +20,7 @@ export const updateProfileSchema = z.object({
         .optional(),
     internshipInterest: z.boolean().nullable().optional(),
     internshipDomains: z.array(z.string()).optional(),
+    interests: z.array(z.string()).optional(),
     dateOfBirth: z.preprocess((val) => (val === '' || val === null ? undefined : val), z.string().refine((val) => !isNaN(Date.parse(val)), 'Invalid date format').optional()),
 });
 

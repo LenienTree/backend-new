@@ -78,6 +78,15 @@ export class AdminController {
         sendSuccess(reply, event);
     };
 
+    toggleShowOnLanding = async (request: AuthRequest, reply: FastifyReply) => {
+        const { showOnLanding } = request.body as any;
+        const event = await adminService.toggleShowOnLandingEvent(
+            (request.params as any).id as string,
+            showOnLanding
+        );
+        sendSuccess(reply, event);
+    };
+
     approveOrganizer = async (request: AuthRequest, reply: FastifyReply) => {
         const userId = (request.params as any).id as string;
         // Grant the organizer role

@@ -35,6 +35,9 @@ export default async function adminRoutes(fastify: FastifyInstance) {
     // PUT /api/admin/events/:id/premium
     fastify.put('/events/:id/premium', adminController.togglePremium);
 
+    // PUT /api/admin/events/:id/landing  (toggle visibility on the landing page)
+    fastify.put('/events/:id/landing', adminController.toggleShowOnLanding);
+
     // GET /api/admin/users
     fastify.get('/users', adminController.getAllUsers);
 

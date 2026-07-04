@@ -15,6 +15,7 @@ export const registerSchema = z.object({
     graduationYear: z.number().int().min(2000).max(2035).optional(),
     currentRole: z.string().optional(),
     referralCode: z.string().optional(),
+    interests: z.array(z.string()).optional(),
     dateOfBirth: z.string().refine((val) => !isNaN(Date.parse(val)), 'Invalid date format'),
 });
 

@@ -58,7 +58,9 @@ app.register(cors, {
         }
 
         const isAllowed = allowedOrigins.includes(origin) || 
-            /^https:\/\/[a-zA-Z0-9-._]+\.vercel\.app$/.test(origin);
+            /^https:\/\/[a-zA-Z0-9-._]+\.vercel\.app$/.test(origin) ||
+            /^http:\/\/localhost(:\d+)?$/.test(origin) ||
+            /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
 
         if (isAllowed) {
             callback(null, true);
