@@ -20,6 +20,7 @@ export class AuthService {
         phone?: string;
         college?: string;
         graduationYear?: number;
+        currentRole?: string;
         referralCode?: string;
         dateOfBirth: string;
     }) {
@@ -43,6 +44,7 @@ export class AuthService {
                 phone: data.phone,
                 college: data.college,
                 graduationYear: data.graduationYear,
+                currentRole: data.currentRole,
                 passwordHash,
                 dateOfBirth: new Date(data.dateOfBirth),
                 socialLinks: { create: {} },
@@ -58,6 +60,7 @@ export class AuthService {
                 phone: true,
                 college: true,
                 graduationYear: true,
+                currentRole: true,
                 profileImage: true,
                 createdAt: true,
                 internshipInterest: true,
@@ -135,6 +138,7 @@ export class AuthService {
                 phone: true,
                 college: true,
                 graduationYear: true,
+                currentRole: true,
                 profileImage: true,
                 internshipInterest: true,
                 internshipDomains: true,
@@ -226,6 +230,7 @@ export class AuthService {
                 phone: user.phone,
                 college: user.college,
                 graduationYear: user.graduationYear,
+                currentRole: user.currentRole,
                 profileImage: user.profileImage,
                 internshipInterest: user.internshipInterest,
                 internshipDomains: user.internshipDomains,

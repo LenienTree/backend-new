@@ -18,6 +18,7 @@ export class UserService {
                 isOrganizer: true,
                 college: true,
                 graduationYear: true,
+                currentRole: true,
                 dateOfBirth: true,
                 bio: true,
                 profileImage: true,
@@ -57,6 +58,7 @@ export class UserService {
                 profileImage: true,
                 college: true,
                 graduationYear: true,
+                currentRole: true,
                 isOrganizer: true,
                 createdAt: true,
                 socialLinks: true,
@@ -82,6 +84,7 @@ export class UserService {
             phone?: string;
             college?: string;
             graduationYear?: number;
+            currentRole?: string;
             bio?: string;
             skills?: string[];
             socialLinks?: {
@@ -129,6 +132,7 @@ export class UserService {
                 bio: true,
                 college: true,
                 graduationYear: true,
+                currentRole: true,
                 socialLinks: true,
                 skills: { select: { skill: true } },
                 internshipInterest: true,
@@ -360,6 +364,7 @@ export class UserService {
                 profileImage: true,
                 college: true,
                 graduationYear: true,
+                currentRole: true,
                 isOrganizer: true,
                 createdAt: true,
                 socialLinks: {

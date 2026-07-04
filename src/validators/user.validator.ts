@@ -5,6 +5,7 @@ export const updateProfileSchema = z.object({
     phone: z.coerce.string().nullable().optional(),
     college: z.coerce.string().nullable().optional(),
     graduationYear: z.coerce.number().int().min(2000).max(2035).nullable().optional(),
+    currentRole: z.coerce.string().nullable().optional(),
     bio: z.string().max(500).nullable().optional(),
     skills: z.array(z.string()).optional(),
     socialLinks: z

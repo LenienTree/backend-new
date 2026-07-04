@@ -18,6 +18,7 @@ model User {
   isOrganizer     Boolean        @default(false)
   college         String?
   graduationYear  Int?
+  currentRole     String?
   dateOfBirth     DateTime?
   bio             String?
   profileImage    String?
