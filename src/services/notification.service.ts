@@ -58,6 +58,12 @@ export class NotificationService {
 
     /** Mark specific notifications as read */
     async markRead(userId: string, notificationIds: string[]) {
+        // Guard: with an empty/undefined id list Prisma treats `id: { in: undefined }`
+        // as "no id filter", which would silently mark ALL of the user's
+        // notifications as read. Only update when a concrete id list is given.
+        if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
+            return { count: 0 };
+        }
         return prisma.notification.updateMany({
             where: { userId, id: { in: notificationIds } },
             data: { isRead: true },
