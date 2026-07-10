@@ -13,6 +13,7 @@ export class AdminService {
             recentEvents,
             recentUsers,
             usersWithInterests,
+            revenueRows,
         ] = await Promise.all([
             prisma.user.count({ where: { deletedAt: null } }),
             prisma.event.count({ where: { deletedAt: null } }),
@@ -42,6 +43,14 @@ export class AdminService {
                 where: { deletedAt: null },
                 select: { interests: true },
             }),
+            // Revenue = sum of ticketPrice over all PAID registrations, computed in
+            // the DB so we don't stream every paid registration back to Node.
+            prisma.$queryRaw<{ revenue: number }[]>`
+                SELECT COALESCE(SUM(e."ticketPrice"), 0) AS revenue
+                FROM "Registration" r
+                JOIN "Event" e ON e.id = r."eventId"
+                WHERE r."paymentStatus" = 'PAID'
+            `,
         ]);
 
         const interestCounts = usersWithInterests.reduce<Record<string, number>>((acc, user) => {
@@ -55,15 +64,7 @@ export class AdminService {
             .map(([label, count]) => ({ label, count }))
             .sort((a, b) => b.count - a.count);
 
-        // Revenue: Count paid registrations and join event ticketPrice
-        const paidRegistrations = await prisma.registration.findMany({
-            where: { paymentStatus: 'PAID' },
-            include: { event: { select: { ticketPrice: true } } },
-        });
-        const revenue = paidRegistrations.reduce(
-            (sum, r) => sum + (r.event.ticketPrice || 0),
-            0
-        );
+        const revenue = Number(revenueRows[0]?.revenue ?? 0);
 
         return {
             stats: {
@@ -293,6 +294,7 @@ export class AdminService {
             eventsByCategory,
             recentRegistrations,
             topEvents,
+            revenueRows,
         ] = await Promise.all([
             // Daily user signups for last 30 days
             prisma.$queryRaw<{ date: string; count: bigint }[]>`
@@ -334,17 +336,17 @@ export class AdminService {
                 orderBy: { registrations: { _count: 'desc' } },
                 take: 5,
             }),
+            // Revenue over the last 90 days — summed in the DB (join Event for price)
+            // instead of pulling every paid registration into Node.
+            prisma.$queryRaw<{ revenue: number }[]>`
+                SELECT COALESCE(SUM(e."ticketPrice"), 0) AS revenue
+                FROM "Registration" r
+                JOIN "Event" e ON e.id = r."eventId"
+                WHERE r."paymentStatus" = 'PAID' AND r."registeredAt" >= ${ninetyDaysAgo}
+            `,
         ]);
 
-        // Revenue last 90 days
-        const paidRegs = await prisma.registration.findMany({
-            where: {
-                paymentStatus: 'PAID',
-                registeredAt: { gte: ninetyDaysAgo },
-            },
-            include: { event: { select: { ticketPrice: true } } },
-        });
-        const totalRevenue = paidRegs.reduce((sum, r) => sum + (r.event.ticketPrice || 0), 0);
+        const totalRevenue = Number(revenueRows[0]?.revenue ?? 0);
 
         return {
             dailySignups: dailySignups.map(d => ({

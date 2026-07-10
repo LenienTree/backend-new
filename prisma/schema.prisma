@@ -46,6 +46,9 @@ model User {
 
   @@index([email])
   @@index([status])
+  @@index([college])
+  @@index([role])
+  @@index([createdAt])
 }
 
 model SocialLink {
@@ -157,6 +160,9 @@ model Registration {
   @@index([status])
   @@index([eventId])
   @@index([userId])
+  @@index([paymentStatus])
+  // Supports the revenue/analytics scans that filter on paid + a recent date window.
+  @@index([paymentStatus, registeredAt])
 }
 
 model Referral {
