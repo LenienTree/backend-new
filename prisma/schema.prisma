@@ -123,6 +123,7 @@ model Event {
   requiresLinkedinShare    Boolean        @default(false)
   linkedinShareDescription String?
   linkedinSharePoster      String?
+  registrationLink         String?
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
   deletedAt            DateTime?

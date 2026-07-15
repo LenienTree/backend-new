@@ -87,6 +87,7 @@ export const updateEventSchema = createEventStep1Schema.partial().merge(
     requiresLinkedinShare: z.boolean().optional(),
     linkedinShareDescription: z.string().nullable().optional(),
     linkedinSharePoster: z.string().nullable().optional(),
+    registrationLink: z.string().url().nullable().optional(),
 });
 
 export const eventFiltersSchema = z.object({

@@ -367,6 +367,7 @@ export class EventService {
                     requiresLinkedinShare: true,
                     linkedinShareDescription: true,
                     linkedinSharePoster: true,
+                    registrationLink: true,
                     registrationType: true,
                     minTeamSize: true,
                     maxTeamSize: true,
