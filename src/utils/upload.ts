@@ -4,7 +4,7 @@ import s3Client from '../config/s3';
 import { config } from '../config/config';
 import { AppError } from './apiResponse';
 
-type UploadFolder = 'banners' | 'avatars' | 'gallery' | 'certificates' | 'posters' | 'registrations' | 'qr-codes' | 'homepage/banners' | 'homepage/community' | 'homepage/avatars';
+type UploadFolder = 'banners' | 'avatars' | 'gallery' | 'certificates' | 'posters' | 'registrations' | 'qr-codes' | 'resumes' | 'homepage/banners' | 'homepage/community' | 'homepage/avatars';
 
 
 export interface UploadResult {

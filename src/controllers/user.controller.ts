@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { userService } from '../services/user.service';
-import { sendSuccess } from '../utils/apiResponse';
+import { sendSuccess, AppError } from '../utils/apiResponse';
 import { AuthRequest } from '../types';
 import { uploadToS3 } from '../utils/upload';
 
@@ -44,6 +44,34 @@ export class UserController {
             result.secure_url
         );
         sendSuccess(reply, user, 'Profile image updated');
+    };
+
+    updateRoleProfile = async (request: AuthRequest, reply: FastifyReply) => {
+        const profile = await userService.updateRoleProfile(request.user!.userId, request.body as any);
+        sendSuccess(reply, profile, 'Profile details updated');
+    };
+
+    uploadResume = async (request: AuthRequest, reply: FastifyReply) => {
+        const fileData = await request.file();
+        if (!fileData) throw new AppError('No file uploaded', 400);
+
+        const allowed = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ];
+        if (!allowed.includes(fileData.mimetype)) {
+            throw new AppError('Resume must be a PDF or Word document.', 400);
+        }
+
+        const buffer = await fileData.toBuffer();
+        if (buffer.length > 5 * 1024 * 1024) {
+            throw new AppError('Resume must be 5 MB or smaller.', 400);
+        }
+
+        const result = await uploadToS3(buffer, 'resumes', `resume_${request.user!.userId}`, fileData.mimetype);
+        const profile = await userService.updateResume(request.user!.userId, result.secure_url);
+        sendSuccess(reply, profile, 'Resume uploaded');
     };
 
     addGalleryImage = async (request: AuthRequest, reply: FastifyReply) => {

@@ -28,6 +28,7 @@ model User {
   internshipInterest Boolean?
   internshipDomains  String[]
   interests          String[]
+  userType        UserType?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   deletedAt       DateTime?
@@ -43,6 +44,11 @@ model User {
   referrals       Referral[]
   referralClicks  ReferralClick[]
   notifications   Notification[]
+  schoolProfile        SchoolProfile?
+  collegeProfile       CollegeProfile?
+  professionalProfile  ProfessionalProfile?
+  hrProfile            HrProfile?
+  founderProfile       FounderProfile?
 
   @@index([email])
   @@index([status])
@@ -391,4 +397,87 @@ enum NotificationType {
   ANNOUNCEMENT
   CERTIFICATE_ISSUED
   GENERAL
+}
+
+// ─── Role-based signup profiles ────────────────────────────────────────────────
+// `userType` is an independent dimension from the security `role` (USER/ADMIN) and
+// `isOrganizer`. Each user has exactly one profile row matching their userType.
+
+enum UserType {
+  SCHOOL_STUDENT
+  COLLEGE_STUDENT
+  PROFESSIONAL
+  HR_RECRUITER
+  FOUNDER
+}
+
+model SchoolProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  className      String
+  country        String
+  purpose        String
+  whatsappNumber String?
+  interests      String[]
+  otherInterests String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model CollegeProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interests      String[]
+  otherInterests String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ProfessionalProfile {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobTitle          String
+  yearsOfExperience String
+  keySkills         String[]
+  noticePeriod      String
+  currentCompany    String?
+  resumeUrl         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model HrProfile {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName       String
+  jobTitle          String
+  companySize       String
+  industry          String
+  hiringRequirement String
+  companyWebsite    String?
+  linkedinProfile   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model FounderProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName    String
+  founderRole    String
+  startupStage   String
+  industry       String
+  otherIndustry  String?
+  linkedin       String?
+  github         String?
+  twitter        String?
+  portfolio      String?
+  startupWebsite String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }

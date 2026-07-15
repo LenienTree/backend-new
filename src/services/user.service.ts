@@ -16,6 +16,7 @@ export class UserService {
                 phone: true,
                 role: true,
                 isOrganizer: true,
+                userType: true,
                 college: true,
                 graduationYear: true,
                 currentRole: true,
@@ -32,6 +33,11 @@ export class UserService {
                 skills: { select: { skill: true } },
                 galleryImages: true,
                 googleId: true,
+                schoolProfile: true,
+                collegeProfile: true,
+                professionalProfile: true,
+                hrProfile: true,
+                founderProfile: true,
                 certificates: {
                     include: { event: { select: { id: true, title: true } } },
                 },
@@ -153,6 +159,61 @@ export class UserService {
             data: { profileImage: imageUrl },
             select: { id: true, profileImage: true },
         });
+    }
+
+    async updateResume(userId: string, resumeUrl: string) {
+        const profile = await prisma.professionalProfile.findUnique({ where: { userId } });
+        if (!profile) {
+            throw new AppError('Resume upload is only available for professional accounts.', 400);
+        }
+        return prisma.professionalProfile.update({
+            where: { userId },
+            data: { resumeUrl },
+            select: { id: true, resumeUrl: true },
+        });
+    }
+
+    // Update the caller's role-specific profile. Fields are whitelisted per userType
+    // so a caller can never write columns of another role (mass-assignment guard).
+    async updateRoleProfile(userId: string, data: Record<string, any>) {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { userType: true },
+        });
+        if (!user?.userType) {
+            throw new AppError('This account has no role profile to edit.', 400);
+        }
+
+        const allowed: Record<string, string[]> = {
+            SCHOOL_STUDENT: ['className', 'country', 'purpose', 'whatsappNumber', 'interests', 'otherInterests'],
+            COLLEGE_STUDENT: ['interests', 'otherInterests'],
+            PROFESSIONAL: ['jobTitle', 'yearsOfExperience', 'keySkills', 'noticePeriod', 'currentCompany'],
+            HR_RECRUITER: ['companyName', 'jobTitle', 'companySize', 'industry', 'hiringRequirement', 'companyWebsite', 'linkedinProfile'],
+            FOUNDER: ['companyName', 'founderRole', 'startupStage', 'industry', 'otherIndustry', 'linkedin', 'github', 'twitter', 'portfolio', 'startupWebsite'],
+        };
+
+        const fields = allowed[user.userType];
+        if (!fields) throw new AppError('Unsupported account role.', 400);
+
+        const clean: Record<string, any> = {};
+        for (const key of fields) {
+            if (data[key] !== undefined) clean[key] = data[key];
+        }
+
+        switch (user.userType) {
+            case 'SCHOOL_STUDENT':
+                return prisma.schoolProfile.update({ where: { userId }, data: clean });
+            case 'COLLEGE_STUDENT':
+                return prisma.collegeProfile.update({ where: { userId }, data: clean });
+            case 'PROFESSIONAL':
+                return prisma.professionalProfile.update({ where: { userId }, data: clean });
+            case 'HR_RECRUITER':
+                return prisma.hrProfile.update({ where: { userId }, data: clean });
+            case 'FOUNDER':
+                return prisma.founderProfile.update({ where: { userId }, data: clean });
+            default:
+                throw new AppError('Unsupported account role.', 400);
+        }
     }
 
     async addGalleryImage(userId: string, imageUrl: string, caption?: string) {

@@ -10,21 +10,65 @@ import {
 import { sendEmail, emailTemplates } from '../utils/email';
 import { config } from '../config/config';
 import { JwtPayload } from '../types';
+import { RegisterInput } from '../validators/auth.validator';
 import { emailEmitter, EmailEvent } from '../modules/email';
 
+// Build the nested Prisma create for the role-specific profile row so the user +
+// their profile are created in a single atomic operation.
+function buildProfileCreate(userType: string, p: any) {
+    switch (userType) {
+        case 'SCHOOL_STUDENT':
+            return { schoolProfile: { create: {
+                className: p.className,
+                country: p.country,
+                purpose: p.purpose,
+                whatsappNumber: p.whatsappNumber,
+                interests: p.interests ?? [],
+                otherInterests: p.otherInterests,
+            } } };
+        case 'COLLEGE_STUDENT':
+            return { collegeProfile: { create: {
+                interests: p.interests ?? [],
+                otherInterests: p.otherInterests,
+            } } };
+        case 'PROFESSIONAL':
+            return { professionalProfile: { create: {
+                jobTitle: p.jobTitle,
+                yearsOfExperience: p.yearsOfExperience,
+                keySkills: p.keySkills ?? [],
+                noticePeriod: p.noticePeriod,
+                currentCompany: p.currentCompany,
+            } } };
+        case 'HR_RECRUITER':
+            return { hrProfile: { create: {
+                companyName: p.companyName,
+                jobTitle: p.jobTitle,
+                companySize: p.companySize,
+                industry: p.industry,
+                hiringRequirement: p.hiringRequirement,
+                companyWebsite: p.companyWebsite,
+                linkedinProfile: p.linkedinProfile,
+            } } };
+        case 'FOUNDER':
+            return { founderProfile: { create: {
+                companyName: p.companyName,
+                founderRole: p.founderRole,
+                startupStage: p.startupStage,
+                industry: p.industry,
+                otherIndustry: p.otherIndustry,
+                linkedin: p.linkedin,
+                github: p.github,
+                twitter: p.twitter,
+                portfolio: p.portfolio,
+                startupWebsite: p.startupWebsite,
+            } } };
+        default:
+            return {};
+    }
+}
+
 export class AuthService {
-    async register(data: {
-        name: string;
-        email: string;
-        password: string;
-        phone?: string;
-        college?: string;
-        graduationYear?: number;
-        currentRole?: string;
-        referralCode?: string;
-        interests?: string[];
-        dateOfBirth: string;
-    }) {
+    async register(data: RegisterInput) {
         const existing = await prisma.user.findFirst({
             where: {
                 email: data.email,
@@ -38,18 +82,26 @@ export class AuthService {
 
         const passwordHash = await bcrypt.hash(data.password, 12);
 
+        const p: any = (data as any).profile ?? {};
+        const dateOfBirth = (data as any).dateOfBirth as string | undefined;
+        const profileCreate = buildProfileCreate(data.userType, p);
+
         const user = await prisma.user.create({
             data: {
                 name: data.name,
                 email: data.email,
                 phone: data.phone,
-                college: data.college,
-                graduationYear: data.graduationYear,
-                currentRole: data.currentRole,
                 passwordHash,
-                interests: data.interests ?? [],
-                dateOfBirth: new Date(data.dateOfBirth),
+                userType: data.userType,
+                // College students provide their college (also powers referral-by-college).
+                college: (data as any).college,
+                // Only school/college signups collect a date of birth.
+                dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+                // Mirror the role's interest selections into the legacy column so
+                // existing interest analytics keep working until the P3 revamp.
+                interests: Array.isArray(p.interests) ? p.interests : [],
                 socialLinks: { create: {} },
+                ...profileCreate,
             },
             select: {
                 id: true,
@@ -57,6 +109,7 @@ export class AuthService {
                 email: true,
                 role: true,
                 isOrganizer: true,
+                userType: true,
                 status: true,
                 isEmailVerified: true,
                 phone: true,

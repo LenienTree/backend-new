@@ -24,9 +24,15 @@ export default async function userRoutes(fastify: FastifyInstance) {
     // PUT /api/users/me
     fastify.put('/me', { preHandler: validate(updateProfileSchema) }, userController.updateProfile);
 
+    // PUT /api/users/me/role-profile — update role-specific profile fields (whitelisted per userType)
+    fastify.put('/me/role-profile', userController.updateRoleProfile);
+
     // POST /api/users/profile-image (Original) & POST /api/users/me/avatar (Frontend alias)
     fastify.post('/profile-image', userController.uploadProfileImage);
     fastify.post('/me/avatar', userController.uploadProfileImage);
+
+    // POST /api/users/me/resume (professionals — PDF/DOC, max 5 MB)
+    fastify.post('/me/resume', userController.uploadResume);
 
     // POST /api/users/gallery (Original) & POST /api/users/me/gallery (Frontend alias)
     fastify.post('/gallery', userController.addGalleryImage);
