@@ -129,6 +129,15 @@ export class AdminController {
         const result = await adminService.updateEventsOrder(events);
         sendSuccess(reply, result, 'Events order updated');
     };
+
+    getInterestUsers = async (request: AuthRequest, reply: FastifyReply) => {
+        const { interest } = request.query as { interest: string };
+        if (!interest) {
+            return sendSuccess(reply, [], 'No interest provided');
+        }
+        const users = await adminService.getInterestUsers(interest);
+        sendSuccess(reply, users);
+    };
 }
 
 export const adminController = new AdminController();

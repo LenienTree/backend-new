@@ -76,5 +76,8 @@ export default async function adminRoutes(fastify: FastifyInstance) {
 
     // PUT /api/admin/events/order
     fastify.put('/events/order', adminController.updateEventsOrder);
+
+    // GET /api/admin/interest-users?interest=<interest label>
+    fastify.get('/interest-users', adminController.getInterestUsers);
 }
 

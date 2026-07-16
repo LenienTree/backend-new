@@ -414,6 +414,25 @@ export class AdminService {
         await prisma.$transaction(updates);
         return { success: true };
     }
+
+    async getInterestUsers(interest: string) {
+        const users = await prisma.user.findMany({
+            where: {
+                deletedAt: null,
+                interests: { has: interest },
+            },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                college: true,
+                createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+        return users;
+    }
 }
 
 export const adminService = new AdminService();
