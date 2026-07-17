@@ -7,6 +7,8 @@ export const registerEventSchema = z.object({
     razorpayPaymentId: z.string().optional(),
     razorpayOrderId: z.string().optional(),
     razorpaySignature: z.string().optional(),
+    isMember: z.boolean().optional(),
+    ieeeMemberId: z.string().max(50).optional(),
 });
 
 export const announcementSchema = z.object({

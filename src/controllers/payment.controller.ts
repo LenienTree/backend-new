@@ -8,7 +8,7 @@ import Razorpay from 'razorpay';
 export class PaymentController {
     createRazorpayOrder = async (request: AuthRequest, reply: FastifyReply) => {
         const { id: eventId } = request.params as any;
-        const { teamSize } = request.body as any;
+        const { teamSize, isMember } = request.body as any;
         
         const event = await prisma.event.findUnique({
             where: { id: eventId, deletedAt: null },
@@ -17,7 +17,11 @@ export class PaymentController {
         if (!event) throw new AppError('Event not found.', 404);
         if (!event.isPaid) throw new AppError('Event is not a paid event.', 400);
 
-        const ticketPrice = event.ticketPrice || 0;
+        let ticketPrice = event.ticketPrice || 0;
+        if (event.isIeeeEvent) {
+            ticketPrice = (isMember ? event.ieeeMemberPrice : event.nonIeeeMemberPrice) ?? 0;
+        }
+        
         const count = Math.max(1, parseInt(teamSize) || 1);
         const amount = ticketPrice * count;
 

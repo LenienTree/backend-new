@@ -105,6 +105,10 @@ export class EventService {
             customFormFields?: unknown;
             paymentType?: string;
             upiId?: string;
+            isIeeeEvent?: boolean;
+            ieeeMemberPrice?: number | null;
+            nonIeeeMemberPrice?: number | null;
+            requiresIeeeId?: boolean;
         },
         role?: string
     ) {

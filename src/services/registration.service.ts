@@ -15,7 +15,9 @@ export class RegistrationService {
         referralCode?: string,
         razorpayPaymentId?: string,
         razorpayOrderId?: string,
-        razorpaySignature?: string
+        razorpaySignature?: string,
+        isMember?: boolean,
+        ieeeMemberId?: string
     ) {
         const event = await prisma.event.findUnique({
             where: { id: eventId, deletedAt: null },
@@ -45,7 +47,17 @@ export class RegistrationService {
             }
         }
 
-        const isPaid = event.isPaid;
+        let isPaid = event.isPaid;
+        if (event.isIeeeEvent && event.isPaid) {
+            if (isMember) {
+                if (event.requiresIeeeId && (!ieeeMemberId || !ieeeMemberId.trim())) {
+                    throw new AppError('IEEE Member ID is required for IEEE members.', 400);
+                }
+            }
+            const effectivePrice = isMember ? (event.ieeeMemberPrice ?? 0) : (event.nonIeeeMemberPrice ?? 0);
+            isPaid = effectivePrice > 0;
+        }
+
         const isAutoApproval = event.approvalMode === 'AUTO';
 
         // Requirement check: payment_url or razorpay signature is mandatory for paid events
@@ -105,6 +117,8 @@ export class RegistrationService {
                 formData: (formData ?? Prisma.JsonNull) as Prisma.InputJsonValue,
                 paymentProof: finalPaymentRef,
                 paymentRef: razorpayOrderId || undefined,
+                isMember,
+                ieeeMemberId,
             },
             include: {
                 event: { select: { title: true } },

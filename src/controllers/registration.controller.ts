@@ -12,6 +12,8 @@ export class RegistrationController {
         let razorpayPaymentId: string | undefined;
         let razorpayOrderId: string | undefined;
         let razorpaySignature: string | undefined;
+        let isMember: boolean | undefined;
+        let ieeeMemberId: string | undefined;
 
         if (request.isMultipart()) {
             const part = await request.file();
@@ -34,6 +36,14 @@ export class RegistrationController {
                 if (part.fields.razorpayPaymentId) razorpayPaymentId = (part.fields.razorpayPaymentId as any).value;
                 if (part.fields.razorpayOrderId) razorpayOrderId = (part.fields.razorpayOrderId as any).value;
                 if (part.fields.razorpaySignature) razorpaySignature = (part.fields.razorpaySignature as any).value;
+                
+                if (part.fields.isMember) {
+                    const val = (part.fields.isMember as any).value;
+                    isMember = val === 'true' || val === true;
+                }
+                if (part.fields.ieeeMemberId) {
+                    ieeeMemberId = (part.fields.ieeeMemberId as any).value;
+                }
             }
         } else {
             formData = (request.body as any)?.formData;
@@ -42,6 +52,8 @@ export class RegistrationController {
             razorpayPaymentId = (request.body as any)?.razorpayPaymentId;
             razorpayOrderId = (request.body as any)?.razorpayOrderId;
             razorpaySignature = (request.body as any)?.razorpaySignature;
+            isMember = (request.body as any)?.isMember;
+            ieeeMemberId = (request.body as any)?.ieeeMemberId;
         }
 
         const registration = await registrationService.register(
@@ -52,7 +64,9 @@ export class RegistrationController {
             referralCode,
             razorpayPaymentId,
             razorpayOrderId,
-            razorpaySignature
+            razorpaySignature,
+            isMember,
+            ieeeMemberId
         );
         sendCreated(reply, registration, 'Registration successful');
     };

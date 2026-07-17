@@ -23,6 +23,10 @@ export const createEventStep1Schema = z.object({
     prizeAmount: z.number().min(0).optional(),
     isPaid: z.boolean().default(false),
     ticketPrice: z.number().min(0).optional(),
+    isIeeeEvent: z.boolean().optional(),
+    ieeeMemberPrice: z.number().min(0).nullable().optional(),
+    nonIeeeMemberPrice: z.number().min(0).nullable().optional(),
+    requiresIeeeId: z.boolean().optional(),
     registrationType: z.enum(['INDIVIDUAL', 'GROUP']).default('INDIVIDUAL'),
     minTeamSize: z.number().int().min(1).optional(),
     maxTeamSize: z.number().int().min(1).optional(),
@@ -60,7 +64,7 @@ export const updateEventStep2Schema = z.object({
         .array(
             z.object({
                 label: z.string(),
-                type: z.enum(['text', 'email', 'number', 'select', 'textarea', 'checkbox']),
+                type: z.enum(['text', 'email', 'number', 'select', 'textarea', 'checkbox', 'tel', 'url']),
                 required: z.boolean().default(false),
                 options: z.array(z.string()).optional(),
             })
@@ -68,6 +72,10 @@ export const updateEventStep2Schema = z.object({
         .optional(),
     paymentType: z.enum(['FREE', 'MANUAL_UPI', 'RAZORPAY']).optional(),
     upiId: z.string().nullable().optional(),
+    isIeeeEvent: z.boolean().optional(),
+    ieeeMemberPrice: z.number().min(0).nullable().optional(),
+    nonIeeeMemberPrice: z.number().min(0).nullable().optional(),
+    requiresIeeeId: z.boolean().optional(),
 });
 
 export const submitEventSchema = z.object({
