@@ -271,13 +271,13 @@ export class AuthService {
         };
     }
 
-    async forgotPassword(email: string) {
+    async forgotPassword(email: string): Promise<string | null> {
         const user = await prisma.user.findUnique({
             where: { email, deletedAt: null },
         });
 
         // Don't reveal if user exists
-        if (!user) return;
+        if (!user) return null;
 
         const token = crypto.randomBytes(32).toString('hex');
         const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
@@ -300,6 +300,8 @@ export class AuthService {
             name: user.name,
             resetUrl: resetLink,
         });
+
+        return resetLink;
     }
 
     async resetPassword(token: string, newPassword: string) {

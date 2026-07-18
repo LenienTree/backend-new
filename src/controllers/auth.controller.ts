@@ -75,10 +75,11 @@ export class AuthController {
     };
 
     forgotPassword = async (request: FastifyRequest, reply: FastifyReply) => {
-        await authService.forgotPassword((request.body as any).email);
+        const resetLink = await authService.forgotPassword((request.body as any).email);
+        const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' || !process.env.NODE_ENV;
         sendSuccess(
             reply,
-            null,
+            isDev ? { resetLink } : null,
             'If an account exists, a password reset email has been sent.'
         );
     };

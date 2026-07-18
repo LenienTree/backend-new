@@ -32,6 +32,7 @@ export const registerEmailListeners = (): void => {
 
     emailEmitter.on(EmailEvent.PASSWORD_RESET_REQUESTED, async (payload: { email: string; name: string; resetUrl: string }) => {
         try {
+            console.log(`[Email] Dispatching PASSWORD_RESET_REQUESTED to: ${payload.email}`);
             await EmailService.sendTemplatedEmail(
                 payload.email,
                 TemplateName.PASSWORD_RESET,
@@ -39,7 +40,8 @@ export const registerEmailListeners = (): void => {
                 'Reset Your LenientTree Password 🔒'
             );
         } catch (err) {
-            console.error('[Email] Failed to process PASSWORD_RESET_REQUESTED event.');
+            console.error('[Email] Failed to process PASSWORD_RESET_REQUESTED event:', err);
+            console.warn(`[DEV ONLY] Since SMTP failed, you can manually reset via: ${payload.resetUrl}`);
         }
     });
 
