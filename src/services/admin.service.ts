@@ -263,6 +263,8 @@ export class AdminService {
                 title: event.title,
                 status: event.status,
                 startDate: event.startDate,
+                category: event.category,
+                maxParticipants: event.maxParticipants,
                 total,
                 approved,
                 pending,
