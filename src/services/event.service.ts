@@ -114,20 +114,28 @@ export class EventService {
     ) {
         await this.verifyOwnership(eventId, organizerId, role);
 
-        const { designConfig, ...rest } = data;
+        const { designConfig, customFormFields, approvalMode, paymentType, upiId, ...rest } = data;
+
+        // Only persist fields that were actually provided. This is a partial update:
+        // the form-builder "Save fields" action sends just `customFormFields`, so we
+        // must NOT reset untouched config (paymentType, approvalMode, upiId, colors)
+        // back to defaults — doing so silently turned paid events FREE.
+        const updateData: Prisma.EventUncheckedUpdateInput = { ...rest };
+
+        if (approvalMode !== undefined)
+            updateData.approvalMode = approvalMode as Prisma.EventUncheckedUpdateInput['approvalMode'];
+        if (paymentType !== undefined)
+            updateData.paymentType = paymentType as Prisma.EventUncheckedUpdateInput['paymentType'];
+        if (upiId !== undefined) updateData.upiId = upiId;
+        if (designConfig?.primaryColor !== undefined) updateData.primaryColor = designConfig.primaryColor;
+        if (designConfig?.secondaryColor !== undefined) updateData.secondaryColor = designConfig.secondaryColor;
+        if (designConfig?.accentColor !== undefined) updateData.accentColor = designConfig.accentColor;
+        if (customFormFields !== undefined)
+            updateData.customFormFields = customFormFields as Prisma.InputJsonValue;
 
         return prisma.event.update({
             where: { id: eventId },
-            data: {
-                ...rest,
-                approvalMode: (data.approvalMode || 'AUTO') as Prisma.EventUncheckedUpdateInput['approvalMode'],
-                primaryColor: designConfig?.primaryColor,
-                secondaryColor: designConfig?.secondaryColor,
-                accentColor: designConfig?.accentColor,
-                customFormFields: data.customFormFields as Prisma.InputJsonValue,
-                paymentType: (data.paymentType || 'FREE') as Prisma.EventUncheckedUpdateInput['paymentType'],
-                upiId: data.upiId,
-            },
+            data: updateData,
         });
     }
 

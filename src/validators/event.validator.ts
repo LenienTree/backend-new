@@ -52,7 +52,9 @@ export const createEventStep1Schema = z.object({
 
 export const updateEventStep2Schema = z.object({
     maxParticipants: z.number().int().min(1).optional(),
-    approvalMode: z.enum(['AUTO', 'MANUAL']).default('AUTO'),
+    // Optional (no default): an omitted approvalMode means "leave unchanged" on a
+    // partial design update, rather than silently resetting the event to AUTO.
+    approvalMode: z.enum(['AUTO', 'MANUAL']).optional(),
     designConfig: z
         .object({
             primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
