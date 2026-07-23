@@ -4,8 +4,11 @@ import { registerEmailListeners } from './events/email.listeners';
 import { startSchedulers } from './schedulers';
 
 export { emailEmitter } from './events/email.emitter';
-export { EmailService } from './services/email.service';
+export { EmailService, invalidateTemplateCache } from './services/email.service';
 export { EmailEvent, TemplateName } from './constants';
+export { renderTemplate, BASE_LAYOUT, templateSources, emailTemplates } from './templates';
+export { EMAIL_REGISTRY, registryByName, CRITICAL_TEMPLATES } from './registry';
+export type { EmailTemplateMeta, EmailCategory } from './registry';
 
 /**
  * Bootstraps the complete email notification system.

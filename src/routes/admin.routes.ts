@@ -1,9 +1,16 @@
 import { FastifyInstance } from 'fastify';
 import { adminController } from '../controllers/admin.controller';
 import { eventController } from '../controllers/event.controller';
+import { emailAdminController } from '../controllers/emailAdmin.controller';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import { auditLog } from '../middleware/audit.middleware';
 import { adminApproveEventSchema, adminRejectEventSchema } from '../validators/registration.validator';
+import {
+    updateTemplateSchema,
+    previewTemplateSchema,
+    testTemplateSchema,
+    sendCustomSchema,
+} from '../validators/emailAdmin.validator';
 import { validate } from '../middleware/validate.middleware';
 
 export default async function adminRoutes(fastify: FastifyInstance) {
@@ -94,5 +101,49 @@ export default async function adminRoutes(fastify: FastifyInstance) {
 
     // GET /api/admin/interest-users?interest=<interest label>
     fastify.get('/interest-users', adminController.getInterestUsers);
+
+    // ── Email Automation ──────────────────────────────────────────────────────
+
+    // GET /api/admin/email/templates
+    fastify.get('/email/templates', emailAdminController.listTemplates);
+
+    // GET /api/admin/email/templates/:name
+    fastify.get('/email/templates/:name', emailAdminController.getTemplate);
+
+    // PUT /api/admin/email/templates/:name  (edit subject/body/enabled)
+    fastify.put('/email/templates/:name', {
+        preHandler: [validate(updateTemplateSchema), auditLog('EMAIL_TEMPLATE_UPDATED', 'EmailTemplate')],
+        handler: emailAdminController.updateTemplate,
+    });
+
+    // POST /api/admin/email/templates/:name/reset  (revert to default)
+    fastify.post('/email/templates/:name/reset', {
+        preHandler: auditLog('EMAIL_TEMPLATE_RESET', 'EmailTemplate'),
+        handler: emailAdminController.resetTemplate,
+    });
+
+    // POST /api/admin/email/templates/:name/preview  (render with sample/provided context)
+    fastify.post('/email/templates/:name/preview', {
+        preHandler: validate(previewTemplateSchema),
+        handler: emailAdminController.preview,
+    });
+
+    // POST /api/admin/email/templates/:name/test  (send a test to an address)
+    fastify.post('/email/templates/:name/test', {
+        preHandler: validate(testTemplateSchema),
+        handler: emailAdminController.test,
+    });
+
+    // GET /api/admin/email/recipient-count?mode=&eventId=&status=&interest=
+    fastify.get('/email/recipient-count', emailAdminController.recipientCount);
+
+    // POST /api/admin/email/send  (custom broadcast; audit logged inside the service)
+    fastify.post('/email/send', {
+        preHandler: validate(sendCustomSchema),
+        handler: emailAdminController.sendCustom,
+    });
+
+    // GET /api/admin/email/logs
+    fastify.get('/email/logs', emailAdminController.getLogs);
 }
 

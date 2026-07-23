@@ -371,6 +371,18 @@ model HomepageSection {
   updatedAt DateTime @updatedAt
 }
 
+// Admin-editable overrides for automated email templates. A row exists only when an
+// admin has customized/paused a template; absence means "use the code default".
+model EmailTemplate {
+  name      String   @id // matches a TemplateName value, e.g. 'welcome'
+  subject   String? // Handlebars subject override (null = code default)
+  bodyHtml  String? // Handlebars body override (null = code default)
+  enabled   Boolean  @default(true)
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Notification {
   id        String           @id @default(uuid())
   userId    String

@@ -1,6 +1,6 @@
 import Handlebars from 'handlebars';
 
-const BASE_LAYOUT = `
+export const BASE_LAYOUT = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -64,9 +64,9 @@ const BASE_LAYOUT = `
 </html>
 `;
 
-export const emailTemplates = {
+export const templateSources: Record<string, string> = {
     // ── Auth Templates ──
-    welcome: Handlebars.compile(`
+    welcome: `
         <h2>Welcome to LenientTree, {{name}}! 🚀</h2>
         <p>We are thrilled to have you join our event lifecycle management platform. With LenientTree, you can discover, register, participate, and earn credentials in first-rate hackathons and conclaves.</p>
         <p>Click the button below to explore your brand new dashboard and complete your student developer profile:</p>
@@ -74,8 +74,8 @@ export const emailTemplates = {
             <a href="{{loginUrl}}" class="btn">Go to Dashboard</a>
         </div>
         <p>Best regards,<br>The LenientTree Team</p>
-    `),
-    verification: Handlebars.compile(`
+    `,
+    verification: `
         <h2>Verify Your Email Address ✉️</h2>
         <p>Hi {{name}},</p>
         <p>Thank you for signing up on LenientTree! Please click the button below to verify your email address and activate your account:</p>
@@ -84,8 +84,8 @@ export const emailTemplates = {
         </div>
         <p>This verification link will expire in {{#if expiresInHours}}{{expiresInHours}}{{else}}24{{/if}} hours.</p>
         <p>If you did not create this account, you can safely ignore this message.</p>
-    `),
-    passwordReset: Handlebars.compile(`
+    `,
+    passwordReset: `
         <h2>Reset Your Password 🔒</h2>
         <p>Hi {{name}},</p>
         <p>We received a request to reset the password for your LenientTree account. Click the button below to set a new password:</p>
@@ -96,14 +96,14 @@ export const emailTemplates = {
         <div class="alert alert-warning">
             If you did not request a password reset, please ignore this email. Your password will remain unchanged.
         </div>
-    `),
-    passwordChanged: Handlebars.compile(`
+    `,
+    passwordChanged: `
         <h2>Password Changed Successfully ✅</h2>
         <p>Hi {{name}},</p>
         <p>This is a confirmation that the password for your LenientTree account has been updated successfully.</p>
         <p>If you did not make this change, please contact support immediately at <strong>{{#if supportEmail}}{{supportEmail}}{{else}}security@lenienttree.com{{/if}}</strong> to secure your account.</p>
-    `),
-    suspiciousLogin: Handlebars.compile(`
+    `,
+    suspiciousLogin: `
         <h2>Security Alert: Suspicious Login Detected ⚠️</h2>
         <p>Hi {{name}},</p>
         <div class="alert alert-danger">
@@ -116,16 +116,16 @@ export const emailTemplates = {
             <strong>Time:</strong> {{time}}
         </div>
         <p>If this was you, no action is needed. If this was not you, please reset your password immediately to protect your profile.</p>
-    `),
-    accountDeleted: Handlebars.compile(`
+    `,
+    accountDeleted: `
         <h2>We're Sorry to See You Go 😢</h2>
         <p>Hi {{name}},</p>
         <p>Your account on LenientTree has been successfully deleted, and your details have been removed in compliance with our data policy.</p>
         <p>Thank you for being part of our developer community. If you ever change your mind, you can register a new account at any time.</p>
-    `),
+    `,
 
     // ── Event Lifecycle Templates ──
-    eventCreated: Handlebars.compile(`
+    eventCreated: `
         <h2>Draft Event Created Successfully 📅</h2>
         <p>Hi {{organizerName}},</p>
         <p>Your new event draft <strong>"{{eventTitle}}"</strong> has been created successfully.</p>
@@ -133,8 +133,8 @@ export const emailTemplates = {
         <div style="text-align: center;">
             <a href="{{dashboardUrl}}" class="btn">Open Organizer Studio</a>
         </div>
-    `),
-    eventUpdated: Handlebars.compile(`
+    `,
+    eventUpdated: `
         <h2>Event Announcement: "{{eventTitle}}" Updated 📢</h2>
         <p>Hi {{name}},</p>
         <p>An event you are registered for, <strong>"{{eventTitle}}"</strong>, has been updated by the organizer.</p>
@@ -146,8 +146,8 @@ export const emailTemplates = {
         <div style="text-align: center;">
             <a href="{{eventUrl}}" class="btn">View Updated Event</a>
         </div>
-    `),
-    eventReminder: Handlebars.compile(`
+    `,
+    eventReminder: `
         <h2>Upcoming Event Nudge: "{{eventTitle}}" ⏰</h2>
         <p>Hi {{name}},</p>
         <p>Get ready! The event <strong>"{{eventTitle}}"</strong> is starting soon.</p>
@@ -159,8 +159,8 @@ export const emailTemplates = {
         <div style="text-align: center;">
             <a href="{{eventUrl}}" class="btn">Access Event Details</a>
         </div>
-    `),
-    eventCancelled: Handlebars.compile(`
+    `,
+    eventCancelled: `
         <h2>Notice: Event "{{eventTitle}}" Cancelled 🚫</h2>
         <p>Hi {{name}},</p>
         <div class="alert alert-danger">
@@ -170,8 +170,8 @@ export const emailTemplates = {
         <p><strong>Reason for cancellation:</strong> {{reason}}</p>
         {{/if}}
         <p>If you made a manual UPI payment, organizers will handle refunds directly. We apologize for any inconvenience caused.</p>
-    `),
-    eventCompleted: Handlebars.compile(`
+    `,
+    eventCompleted: `
         <h2>Congratulations on Completing "{{eventTitle}}"! 🎓</h2>
         <p>Hi {{name}},</p>
         <p>You have successfully completed <strong>"{{eventTitle}}"</strong>! Thank you for participating.</p>
@@ -181,14 +181,14 @@ export const emailTemplates = {
             <a href="{{certificateUrl}}" class="btn">Download Certificate</a>
         </div>
         {{/if}}
-    `),
-    attendanceConfirmed: Handlebars.compile(`
+    `,
+    attendanceConfirmed: `
         <h2>Attendance Confirmed! ✅</h2>
         <p>Hi {{name}},</p>
         <p>Your attendance at <strong>"{{eventTitle}}"</strong> on {{date}} has been checked in and verified by the event coordinator.</p>
         <p>Thank you for participating actively!</p>
-    `),
-    rewardEarned: Handlebars.compile(`
+    `,
+    rewardEarned: `
         <h2>You Earned a Reward! 🎁</h2>
         <p>Hi {{name}},</p>
         <p>Fantastic work! You have earned a reward for your participation and performance.</p>
@@ -199,10 +199,10 @@ export const emailTemplates = {
             <span style="font-family: monospace; font-size: 16px; background-color: #0b1a1a; padding: 8px 16px; border-radius: 6px; border: 1px dashed #00ff88;">{{rewardCode}}</span>
             {{/if}}
         </div>
-    `),
+    `,
 
     // ── Gamification Templates ──
-    badgeEarned: Handlebars.compile(`
+    badgeEarned: `
         <h2>New Badge Earned! 🏆</h2>
         <p>Hi {{name}},</p>
         <p>Your achievements have unlocked a new badge on your LenientTree profile!</p>
@@ -215,8 +215,8 @@ export const emailTemplates = {
             <p style="font-size: 14px; color: #94a3b8; margin: 8px 0 0 0;">{{badgeDescription}}</p>
             {{/if}}
         </div>
-    `),
-    pointsAwarded: Handlebars.compile(`
+    `,
+    pointsAwarded: `
         <h2>Points Awarded! 🪙</h2>
         <p>Hi {{name}},</p>
         <p>You have been awarded <strong>+{{points}} points</strong> on LenientTree!</p>
@@ -225,14 +225,14 @@ export const emailTemplates = {
             <strong>Your New Balance:</strong> {{totalPoints}} points
         </div>
         <p>Keep participating to climb the leaderboard!</p>
-    `),
-    leaderboardRankImproved: Handlebars.compile(`
+    `,
+    leaderboardRankImproved: `
         <h2>Rank Improved on the Leaderboard! 📈</h2>
         <p>Hi {{name}},</p>
         <p>Great job! Your rank on the global developer leaderboard has improved from <strong>#{{previousRank}}</strong> to <strong>#{{rank}}</strong>.</p>
         <p>Keep up the momentum to stay at the top!</p>
-    `),
-    weeklyLeaderboardSummary: Handlebars.compile(`
+    `,
+    weeklyLeaderboardSummary: `
         <h2>Weekly Leaderboard Digest 📊</h2>
         <p>Hi {{name}},</p>
         <p>Here is your weekly recap on the global leaderboard:</p>
@@ -246,24 +246,24 @@ export const emailTemplates = {
             <li>#{{this.rank}} {{this.name}} - {{this.points}} pts</li>
             {{/each}}
         </ul>
-    `),
-    milestoneReached: Handlebars.compile(`
+    `,
+    milestoneReached: `
         <h2>Milestone Reached! 🎉</h2>
         <p>Hi {{name}},</p>
         <p>Congratulations! You have reached a new milestone: <strong>"{{milestoneName}}"</strong>.</p>
         <p style="color: #94a3b8;">{{description}}</p>
-    `),
-    streakWarning: Handlebars.compile(`
+    `,
+    streakWarning: `
         <h2>Save Your Active Streak! 🔥</h2>
         <p>Hi {{name}},</p>
         <div class="alert alert-warning">
             Your current <strong>{{streakDays}}-day active participation streak</strong> is about to expire!
         </div>
         <p>You have {{daysRemaining}} days remaining to complete an activity (like registering for an ideathon, webinars, or bookmarking events) to preserve your stats and multipliers.</p>
-    `),
+    `,
 
     // ── Reporting Templates ──
-    weeklyAnalyticsReport: Handlebars.compile(`
+    weeklyAnalyticsReport: `
         <h2>Weekly Platform Analytics Digest 📈</h2>
         <p>Hi {{name}},</p>
         <p>Here is the platform metrics overview for the past week:</p>
@@ -283,8 +283,8 @@ export const emailTemplates = {
             <li><strong>{{this.title}}</strong> - {{this.registrationsCount}} participants</li>
             {{/each}}
         </ul>
-    `),
-    monthlyEngagementReport: Handlebars.compile(`
+    `,
+    monthlyEngagementReport: `
         <h2>Monthly Platform Engagement Metrics 📊</h2>
         <p>Hi {{name}},</p>
         <p>Here are the engagement metrics overview for this month:</p>
@@ -292,8 +292,8 @@ export const emailTemplates = {
             <strong>Monthly Active Users (MAU):</strong> {{activeUsers}}<br>
             <strong>Platform Interaction/Engagement Rate:</strong> {{engagementRate}}
         </div>
-    `),
-    reportExportReady: Handlebars.compile(`
+    `,
+    reportExportReady: `
         <h2>Your Report Export is Ready for Download 📁</h2>
         <p>Hi {{name}},</p>
         <p>The analytics export for <strong>"{{reportName}}"</strong> has been compiled successfully.</p>
@@ -302,14 +302,14 @@ export const emailTemplates = {
             <a href="{{downloadUrl}}" class="btn">Download Export File</a>
         </div>
         <p>This download link remains active for 48 hours.</p>
-    `),
-    scheduledReportDelivery: Handlebars.compile(`
+    `,
+    scheduledReportDelivery: `
         <h2>Scheduled Report Delivery: "{{reportName}}" 📅</h2>
         <p>Hi {{name}},</p>
         <p>Please find attached the scheduled <strong>{{period}}</strong> analytics report for <strong>"{{reportName}}"</strong>.</p>
         <p>The PDF summary contains platform registrations, conversions, and metrics.</p>
-    `),
-    reportGenerationFailed: Handlebars.compile(`
+    `,
+    reportGenerationFailed: `
         <h2>Report Generation Failed ❌</h2>
         <p>Hi {{name}},</p>
         <div class="alert alert-danger">
@@ -317,10 +317,10 @@ export const emailTemplates = {
         </div>
         <p><strong>Failure Reason:</strong> {{reason}}</p>
         <p>Our automation engineering team has been notified. Please try requesting the export again in a few minutes.</p>
-    `),
+    `,
 
     // ── Admin Templates ──
-    approvalRequired: Handlebars.compile(`
+    approvalRequired: `
         <h2>Action Required: Event Approval Request 🛡️</h2>
         <p>Hi {{adminName}},</p>
         <p>A new event approval request requires review:</p>
@@ -332,8 +332,8 @@ export const emailTemplates = {
         <div style="text-align: center;">
             <a href="{{approvalUrl}}" class="btn">Review Approval Request</a>
         </div>
-    `),
-    approvalDecision: Handlebars.compile(`
+    `,
+    approvalDecision: `
         <h2>Organizer Request Update: {{#if isApproved}}Approved 🎉{{else}}Not Approved ❌{{/if}}</h2>
         <p>Hi {{organizerName}},</p>
         <p>Our admin team has reviewed your organizer request for organization <strong>"{{orgName}}"</strong>.</p>
@@ -353,13 +353,13 @@ export const emailTemplates = {
         {{/if}}
         <p>Please update your details and resubmit in your profile page.</p>
         {{/if}}
-    `),
-    ruleConfigChanged: Handlebars.compile(`
+    `,
+    ruleConfigChanged: `
         <h2>Security Audit: Config Settings Changed 🛡️</h2>
         <p>Hi Admin,</p>
         <p>This is an automated audit log notification indicating that a global system rule configuration was modified.</p>
-    `),
-    largePointAdjustment: Handlebars.compile(`
+    `,
+    largePointAdjustment: `
         <h2>Security Alert: Large Gamification Point Adjustment 🪙</h2>
         <p>Hi {{adminName}},</p>
         <div class="alert alert-warning">
@@ -371,8 +371,8 @@ export const emailTemplates = {
             <strong>New Balance:</strong> {{newTotal}} points<br>
             <strong>Reason:</strong> {{reason}}
         </div>
-    `),
-    systemAutomationFailure: Handlebars.compile(`
+    `,
+    systemAutomationFailure: `
         <h2>System Automation Failure Warning 🚨</h2>
         <p>Hi {{adminName}},</p>
         <div class="alert alert-danger">
@@ -383,8 +383,8 @@ export const emailTemplates = {
             <strong>Severity:</strong> {{severity}}<br>
             <strong>Error Details:</strong> {{errorMessage}}
         </div>
-    `),
-    auditNotification: Handlebars.compile(`
+    `,
+    auditNotification: `
         <h2>Admin Security Log Review 🛡️</h2>
         <p>Hi {{name}},</p>
         <p>An audit action was recorded on your administrative profile:</p>
@@ -394,8 +394,8 @@ export const emailTemplates = {
             <strong>IP:</strong> {{ipAddress}}<br>
             <strong>Time:</strong> {{time}}
         </div>
-    `),
-    registrationConfirmed: Handlebars.compile(`
+    `,
+    registrationConfirmed: `
         <h2>Registration Confirmed! 🎉</h2>
         <p>Hi {{name}},</p>
         <p>Your registration for the event <strong>"{{eventTitle}}"</strong> has been successfully confirmed. We are excited to see you there!</p>
@@ -403,16 +403,16 @@ export const emailTemplates = {
         <div style="text-align: center;">
             <a href="{{dashboardUrl}}" class="btn">View My Registrations</a>
         </div>
-    `),
-    eventApproved: Handlebars.compile(`
+    `,
+    eventApproved: `
         <h2>Event Approved & Live! 🟢</h2>
         <p>Hi {{organizerName}},</p>
         <p>Great news! Your event <strong>"{{eventTitle}}"</strong> has been reviewed and approved by the admin team. It is now published and visible to all participants on the platform.</p>
         <div style="text-align: center;">
             <a href="{{eventUrl}}" class="btn">View Live Event Page</a>
         </div>
-     `),
-    eventRejected: Handlebars.compile(`
+     `,
+    eventRejected: `
         <h2>Event Approval Decision: Not Approved 🔴</h2>
         <p>Hi {{organizerName}},</p>
         <p>Your event <strong>"{{eventTitle}}"</strong> was reviewed, but unfortunately it was not approved for publication at this time.</p>
@@ -423,16 +423,35 @@ export const emailTemplates = {
         <div style="text-align: center;">
             <a href="{{dashboardUrl}}" class="btn">Open Organizer Studio</a>
         </div>
-     `),
+     `,
 };
 
+// Compiled forms of the default templates (single source of truth = templateSources).
+export const emailTemplates: Record<string, Handlebars.TemplateDelegate> = Object.fromEntries(
+    Object.entries(templateSources).map(([name, src]) => [name, Handlebars.compile(src)])
+);
+
+/**
+ * Renders a template's body inside the base layout.
+ *
+ * @param overrideBodyHtml  Optional admin-provided Handlebars body. When supplied it
+ *   is compiled and used instead of the built-in default — this is how the admin
+ *   "edit template" feature takes effect. When omitted, behaviour is identical to
+ *   before (the precompiled default is used), so existing callers are unaffected.
+ */
 export const renderTemplate = (
     templateName: string,
     context: any,
     subject: string,
-    unsubscribeUrl = 'https://lenienttree.com/unsubscribe'
+    unsubscribeUrl = 'https://lenienttree.com/unsubscribe',
+    overrideBodyHtml?: string
 ): string => {
-    const template = (emailTemplates as any)[templateName];
+    let template: Handlebars.TemplateDelegate | undefined;
+    if (overrideBodyHtml != null && overrideBodyHtml.trim() !== '') {
+        template = Handlebars.compile(overrideBodyHtml);
+    } else {
+        template = emailTemplates[templateName];
+    }
     if (!template) {
         throw new Error(`Email template "${templateName}" not found`);
     }
@@ -443,7 +462,7 @@ export const renderTemplate = (
         body: bodyHtml,
         unsubscribeUrl,
     };
-    
+
     const layoutCompiler = Handlebars.compile(BASE_LAYOUT);
     return layoutCompiler(layoutContext);
 };

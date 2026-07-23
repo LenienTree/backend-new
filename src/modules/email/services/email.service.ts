@@ -1,9 +1,11 @@
 import crypto from 'crypto';
+import Handlebars from 'handlebars';
 import { getTransporter } from '../providers/smtp.provider';
 import { renderTemplate } from '../templates';
 import { retryWithBackoff } from '../utils/retry';
 import { EmailOptions, TemplateContexts } from '../types';
 import { emailConfig } from '../config';
+import { CRITICAL_TEMPLATES } from '../registry';
 import { prisma } from '../../../config/database';
 
 // In-memory dedup cache — guards against duplicate sends within a single worker process.
@@ -11,6 +13,41 @@ import { prisma } from '../../../config/database';
 // To fix cross-worker duplicates properly, replace this Map with a shared Redis store.
 const sentEmailsCache = new Map<string, number>();
 const CACHE_TTL_MS = 10000; // 10 seconds
+
+// ── Admin template overrides ──
+// Admins can edit a template's subject/body or pause it entirely; those overrides live
+// in the EmailTemplate table. We cache lookups per worker for a short TTL so the send
+// path stays fast. Every lookup is resilient: on any error we return null and fall back
+// to the built-in default, so email delivery is never blocked by this layer.
+interface TemplateOverride {
+    subject: string | null;
+    bodyHtml: string | null;
+    enabled: boolean;
+}
+const overrideCache = new Map<string, { value: TemplateOverride | null; at: number }>();
+const OVERRIDE_TTL_MS = 30000; // 30 seconds
+
+async function getTemplateOverride(name: string): Promise<TemplateOverride | null> {
+    const cached = overrideCache.get(name);
+    if (cached && Date.now() - cached.at < OVERRIDE_TTL_MS) return cached.value;
+    try {
+        const row = await prisma.emailTemplate.findUnique({ where: { name } });
+        const value: TemplateOverride | null = row
+            ? { subject: row.subject, bodyHtml: row.bodyHtml, enabled: row.enabled }
+            : null;
+        overrideCache.set(name, { value, at: Date.now() });
+        return value;
+    } catch (err) {
+        console.error('[Email] Failed to load template override; using default.', err);
+        return null;
+    }
+}
+
+/** Drop cached overrides so admin edits take effect immediately (same worker). */
+export function invalidateTemplateCache(name?: string): void {
+    if (name) overrideCache.delete(name);
+    else overrideCache.clear();
+}
 
 export class EmailService {
     /**
@@ -73,10 +110,38 @@ export class EmailService {
         attachments?: EmailOptions['attachments']
     ): Promise<void> {
         try {
-            const html = renderTemplate(templateName, context, subject);
+            const name = templateName as string;
+            const override = await getTemplateOverride(name);
+
+            // Respect an admin "pause" — but never for critical transactional emails
+            // (verification, password reset, etc.), which must always be delivered.
+            if (override && override.enabled === false && !CRITICAL_TEMPLATES.has(name)) {
+                console.log(`[Email] Template "${name}" is disabled by admin. Skipping send.`);
+                this.logTemplateSkipped(name, to).catch(() => {});
+                return;
+            }
+
+            // Subject override rendered with the same context; fall back to the caller's
+            // subject on any compile error.
+            let finalSubject = subject;
+            if (override?.subject) {
+                try {
+                    finalSubject = Handlebars.compile(override.subject)(context);
+                } catch {
+                    finalSubject = subject;
+                }
+            }
+
+            const html = renderTemplate(
+                name,
+                context,
+                finalSubject,
+                undefined,
+                override?.bodyHtml ?? undefined
+            );
             await this.send({
                 to,
-                subject,
+                subject: finalSubject,
                 html,
                 attachments,
             });
@@ -85,6 +150,25 @@ export class EmailService {
             // Log a system failure in case of template issues
             this.logSystemFailure(templateName, error).catch(console.error);
             throw error;
+        }
+    }
+
+    /** Records that an automated email was skipped because an admin disabled it. */
+    private static async logTemplateSkipped(templateName: string, to: string | string[]): Promise<void> {
+        try {
+            await prisma.auditLog.create({
+                data: {
+                    action: 'EMAIL_SKIPPED_DISABLED',
+                    entity: 'Email',
+                    newValue: {
+                        template: templateName,
+                        to: Array.isArray(to) ? to.join(', ') : to,
+                        timestamp: new Date().toISOString(),
+                    },
+                },
+            });
+        } catch (error) {
+            console.error('[Email] Failed logging skipped email to AuditLog:', error);
         }
     }
 
