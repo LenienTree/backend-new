@@ -12,7 +12,11 @@ export const auditLog = (action: string, entity: string) => {
                             userId: request.user?.userId,
                             action,
                             entity,
-                            entityId: (request.params as any)?.id as string,
+                            // Prefer the most specific id in the route (e.g. registrationId
+                            // on /events/:id/registrations/:registrationId/...) so the log
+                            // points at the actual target, falling back to the generic :id.
+                            entityId: ((request.params as any)?.registrationId
+                                ?? (request.params as any)?.id) as string,
                             ipAddress: request.ip || 'unknown',
                             userAgent: request.headers['user-agent'] || 'unknown',
                         },

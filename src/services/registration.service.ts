@@ -150,7 +150,9 @@ export class RegistrationService {
         requesterId: string,
         requesterRole: string,
         page = '1',
-        limit = '10'
+        limit = '10',
+        status?: string,
+        search?: string
     ) {
         const event = await prisma.event.findUnique({ where: { id: eventId } });
         if (!event) throw new AppError('Event not found.', 404);
@@ -161,9 +163,25 @@ export class RegistrationService {
 
         const { skip, page: p, limit: l } = getPagination(page, limit);
 
-        const [registrations, total] = await Promise.all([
+        const where: Prisma.RegistrationWhereInput = { eventId };
+        if (status) where.status = status as Prisma.RegistrationWhereInput['status'];
+        if (search) {
+            const s = search.trim();
+            where.user = {
+                is: {
+                    OR: [
+                        { name: { contains: s, mode: 'insensitive' } },
+                        { email: { contains: s, mode: 'insensitive' } },
+                        { phone: { contains: s, mode: 'insensitive' } },
+                        { college: { contains: s, mode: 'insensitive' } },
+                    ],
+                },
+            };
+        }
+
+        const [registrations, total, statusGroups] = await Promise.all([
             prisma.registration.findMany({
-                where: { eventId },
+                where,
                 include: {
                     user: {
                         select: {
@@ -180,10 +198,23 @@ export class RegistrationService {
                 take: l,
                 orderBy: { registeredAt: 'desc' },
             }),
-            prisma.registration.count({ where: { eventId } }),
+            prisma.registration.count({ where }),
+            // Status breakdown for the whole event (ignoring the current filters), so
+            // the UI can render "All / Pending / Approved / …" chips with live counts.
+            prisma.registration.groupBy({
+                by: ['status'],
+                where: { eventId },
+                _count: { _all: true },
+            }),
         ]);
 
-        return buildPaginatedResult(registrations, total, p, l);
+        const counts = statusGroups.reduce<Record<string, number>>((acc, g) => {
+            acc[g.status] = g._count._all;
+            return acc;
+        }, {});
+        counts.ALL = Object.values(counts).reduce((sum, n) => sum + n, 0);
+
+        return { ...buildPaginatedResult(registrations, total, p, l), counts };
     }
 
     async approveRegistration(registrationId: string, requesterId: string, requesterRole: string) {
@@ -321,6 +352,43 @@ export class RegistrationService {
         });
 
         return updated;
+    }
+
+    async setPaymentStatus(
+        registrationId: string,
+        paymentStatus: 'PAID' | 'UNPAID' | 'REFUNDED',
+        requesterId: string,
+        requesterRole: string
+    ) {
+        const reg = await prisma.registration.findUnique({
+            where: { id: registrationId },
+            include: { event: { select: { organizerId: true } } },
+        });
+
+        if (!reg) throw new AppError('Registration not found.', 404);
+        if (requesterRole !== 'ADMIN' && reg.event.organizerId !== requesterId) {
+            throw new AppError('Not authorized.', 403);
+        }
+
+        return prisma.registration.update({
+            where: { id: registrationId },
+            data: { paymentStatus },
+        });
+    }
+
+    async deleteRegistration(registrationId: string, requesterId: string, requesterRole: string) {
+        const reg = await prisma.registration.findUnique({
+            where: { id: registrationId },
+            include: { event: { select: { organizerId: true } } },
+        });
+
+        if (!reg) throw new AppError('Registration not found.', 404);
+        if (requesterRole !== 'ADMIN' && reg.event.organizerId !== requesterId) {
+            throw new AppError('Not authorized.', 403);
+        }
+
+        await prisma.registration.delete({ where: { id: registrationId } });
+        return { success: true };
     }
 }
 

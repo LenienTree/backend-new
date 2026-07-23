@@ -16,6 +16,7 @@ import {
     registerEventSchema,
     announcementSchema,
     faqSchema,
+    setPaymentStatusSchema,
 } from '../validators/registration.validator';
 
 export default async function eventRoutes(fastify: FastifyInstance) {
@@ -183,8 +184,20 @@ export default async function eventRoutes(fastify: FastifyInstance) {
 
     // PUT /api/events/:id/registrations/:registrationId/attend
     fastify.put('/:id/registrations/:registrationId/attend', {
-        preHandler: authenticate,
+        preHandler: [authenticate, auditLog('MARK_ATTENDED', 'Registration')],
         handler: registrationController.markAttended
+    });
+
+    // PUT /api/events/:id/registrations/:registrationId/payment-status
+    fastify.put('/:id/registrations/:registrationId/payment-status', {
+        preHandler: [authenticate, validate(setPaymentStatusSchema), auditLog('UPDATE_PAYMENT_STATUS', 'Registration')],
+        handler: registrationController.setPaymentStatus
+    });
+
+    // DELETE /api/events/:id/registrations/:registrationId
+    fastify.delete('/:id/registrations/:registrationId', {
+        preHandler: [authenticate, auditLog('DELETE_REGISTRATION', 'Registration')],
+        handler: registrationController.deleteRegistration
     });
 }
 

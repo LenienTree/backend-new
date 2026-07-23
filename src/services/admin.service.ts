@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
 import { AppError } from '../utils/apiResponse';
 import { getPagination, buildPaginatedResult } from '../utils/helpers';
@@ -162,11 +163,49 @@ export class AdminService {
         return buildPaginatedResult(users, total, p, l);
     }
 
-    async getAuditLogs(page = '1', limit = '20') {
+    async getAuditLogs(
+        page = '1',
+        limit = '20',
+        filters: {
+            action?: string;
+            entity?: string;
+            userId?: string;
+            search?: string;
+            startDate?: string;
+            endDate?: string;
+        } = {}
+    ) {
         const { skip, page: p, limit: l } = getPagination(page, limit);
 
-        const [logs, total] = await Promise.all([
+        const where: Prisma.AuditLogWhereInput = {};
+        if (filters.action) where.action = filters.action;
+        if (filters.entity) where.entity = filters.entity;
+        if (filters.userId) where.userId = filters.userId;
+
+        if (filters.startDate || filters.endDate) {
+            const createdAt: Prisma.DateTimeFilter = {};
+            if (filters.startDate) createdAt.gte = new Date(filters.startDate);
+            if (filters.endDate) {
+                // Treat endDate as inclusive of the whole day.
+                const end = new Date(filters.endDate);
+                end.setHours(23, 59, 59, 999);
+                createdAt.lte = end;
+            }
+            where.createdAt = createdAt;
+        }
+
+        if (filters.search) {
+            const s = filters.search.trim();
+            where.OR = [
+                { entityId: { contains: s, mode: 'insensitive' } },
+                { user: { name: { contains: s, mode: 'insensitive' } } },
+                { user: { email: { contains: s, mode: 'insensitive' } } },
+            ];
+        }
+
+        const [logs, total, actionGroups, entityGroups] = await Promise.all([
             prisma.auditLog.findMany({
+                where,
                 include: {
                     user: { select: { id: true, name: true, email: true } },
                 },
@@ -174,10 +213,21 @@ export class AdminService {
                 take: l,
                 orderBy: { createdAt: 'desc' },
             }),
-            prisma.auditLog.count(),
+            prisma.auditLog.count({ where }),
+            // Distinct action/entity values to populate the UI filter dropdowns
+            // (unfiltered, so the dropdowns always show every available option).
+            prisma.auditLog.groupBy({ by: ['action'], orderBy: { action: 'asc' } }),
+            prisma.auditLog.groupBy({ by: ['entity'], orderBy: { entity: 'asc' } }),
         ]);
 
-        return buildPaginatedResult(logs, total, p, l);
+        const result = buildPaginatedResult(logs, total, p, l);
+        return {
+            ...result,
+            filters: {
+                actions: actionGroups.map((g) => g.action),
+                entities: entityGroups.map((g) => g.entity),
+            },
+        };
     }
 
     async getOrganizerRequests() {

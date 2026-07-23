@@ -45,8 +45,25 @@ export class AdminController {
     };
 
     getAuditLogs = async (request: AuthRequest, reply: FastifyReply) => {
-        const { page, limit } = request.query as { page?: string; limit?: string };
-        const logs = await adminService.getAuditLogs(page, limit);
+        const { page, limit, action, entity, userId, search, startDate, endDate } =
+            request.query as {
+                page?: string;
+                limit?: string;
+                action?: string;
+                entity?: string;
+                userId?: string;
+                search?: string;
+                startDate?: string;
+                endDate?: string;
+            };
+        const logs = await adminService.getAuditLogs(page, limit, {
+            action,
+            entity,
+            userId,
+            search,
+            startDate,
+            endDate,
+        });
         sendSuccess(reply, logs);
     };
 

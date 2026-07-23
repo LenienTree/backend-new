@@ -30,13 +30,22 @@ export default async function adminRoutes(fastify: FastifyInstance) {
     });
 
     // PUT /api/admin/events/:id/featured
-    fastify.put('/events/:id/featured', adminController.toggleFeatured);
+    fastify.put('/events/:id/featured', {
+        preHandler: auditLog('TOGGLE_FEATURED', 'Event'),
+        handler: adminController.toggleFeatured
+    });
 
     // PUT /api/admin/events/:id/premium
-    fastify.put('/events/:id/premium', adminController.togglePremium);
+    fastify.put('/events/:id/premium', {
+        preHandler: auditLog('TOGGLE_PREMIUM', 'Event'),
+        handler: adminController.togglePremium
+    });
 
     // PUT /api/admin/events/:id/landing  (toggle visibility on the landing page)
-    fastify.put('/events/:id/landing', adminController.toggleShowOnLanding);
+    fastify.put('/events/:id/landing', {
+        preHandler: auditLog('TOGGLE_LANDING', 'Event'),
+        handler: adminController.toggleShowOnLanding
+    });
 
     // GET /api/admin/users
     fastify.get('/users', adminController.getAllUsers);
@@ -48,7 +57,10 @@ export default async function adminRoutes(fastify: FastifyInstance) {
     });
 
     // PUT /api/admin/users/:id/unblock
-    fastify.put('/users/:id/unblock', adminController.unblockUser);
+    fastify.put('/users/:id/unblock', {
+        preHandler: auditLog('UNBLOCK_USER', 'User'),
+        handler: adminController.unblockUser
+    });
 
     // PUT /api/admin/users/:id/approve-organizer
     fastify.put('/users/:id/approve-organizer', {
@@ -75,7 +87,10 @@ export default async function adminRoutes(fastify: FastifyInstance) {
     fastify.get('/events', adminController.getAllEvents);
 
     // PUT /api/admin/events/order
-    fastify.put('/events/order', adminController.updateEventsOrder);
+    fastify.put('/events/order', {
+        preHandler: auditLog('REORDER_EVENTS', 'Event'),
+        handler: adminController.updateEventsOrder
+    });
 
     // GET /api/admin/interest-users?interest=<interest label>
     fastify.get('/interest-users', adminController.getInterestUsers);

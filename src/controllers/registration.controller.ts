@@ -72,13 +72,20 @@ export class RegistrationController {
     };
 
     getParticipants = async (request: AuthRequest, reply: FastifyReply) => {
-        const { page, limit } = request.query as { page?: string; limit?: string };
+        const { page, limit, status, search } = request.query as {
+            page?: string;
+            limit?: string;
+            status?: string;
+            search?: string;
+        };
         const result = await registrationService.getParticipants(
             (request.params as any).id as string,
             request.user!.userId,
             request.user!.role,
             page,
-            limit
+            limit,
+            status,
+            search
         );
         sendSuccess(reply, result);
     };
@@ -116,6 +123,26 @@ export class RegistrationController {
             request.user!.role
         );
         sendSuccess(reply, result, 'Marked as attended');
+    };
+
+    setPaymentStatus = async (request: AuthRequest, reply: FastifyReply) => {
+        const { paymentStatus } = request.body as { paymentStatus: 'PAID' | 'UNPAID' | 'REFUNDED' };
+        const result = await registrationService.setPaymentStatus(
+            (request.params as any).registrationId as string,
+            paymentStatus,
+            request.user!.userId,
+            request.user!.role
+        );
+        sendSuccess(reply, result, 'Payment status updated');
+    };
+
+    deleteRegistration = async (request: AuthRequest, reply: FastifyReply) => {
+        const result = await registrationService.deleteRegistration(
+            (request.params as any).registrationId as string,
+            request.user!.userId,
+            request.user!.role
+        );
+        sendSuccess(reply, result, 'Registration deleted');
     };
 }
 

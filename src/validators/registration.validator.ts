@@ -27,6 +27,10 @@ export const approveRejectRegistrationSchema = z.object({
     reason: z.string().optional(),
 });
 
+export const setPaymentStatusSchema = z.object({
+    paymentStatus: z.enum(['PAID', 'UNPAID', 'REFUNDED']),
+});
+
 export const adminApproveEventSchema = z.object({
     isFeatured: z.boolean().optional(),
     isPremium: z.boolean().optional(),
