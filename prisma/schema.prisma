@@ -371,6 +371,15 @@ model HomepageSection {
   updatedAt DateTime @updatedAt
 }
 
+// Recipients who opted out of emails. Presence of a row = unsubscribed. Applies to
+// any address (registered user or not). Critical transactional mail ignores this.
+model EmailUnsubscribe {
+  email     String   @id
+  reason    String?
+  source    String? // 'link' (self) | 'admin'
+  createdAt DateTime @default(now())
+}
+
 // Admin-editable overrides for automated email templates. A row exists only when an
 // admin has customized/paused a template; absence means "use the code default".
 model EmailTemplate {

@@ -12,6 +12,7 @@ import {
     EMAIL_REGISTRY,
     registryByName,
 } from '../modules/email';
+import { buildUnsubscribeUrl, removeUnsubscribe } from '../modules/email/unsubscribe';
 
 const UNSUBSCRIBE_URL = 'https://lenienttree.com/unsubscribe';
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -220,16 +221,25 @@ export class EmailAdminService {
         opts: RecipientOpts & { subject: string; html: string },
         adminId?: string
     ): Promise<{ queued: number }> {
-        const recipients = await this.resolveRecipients(opts);
-        if (recipients.length === 0) throw new AppError('No valid recipients resolved for this audience.', 400);
+        const resolved = await this.resolveRecipients(opts);
+        if (resolved.length === 0) throw new AppError('No valid recipients resolved for this audience.', 400);
+
+        // Respect unsubscribes for broadcasts (marketing mail is never critical).
+        const unsub = await prisma.emailUnsubscribe.findMany({
+            where: { email: { in: resolved } },
+            select: { email: true },
+        });
+        const unsubSet = new Set(unsub.map((u) => u.email));
+        const recipients = resolved.filter((e) => !unsubSet.has(e));
+        if (recipients.length === 0) throw new AppError('All resolved recipients have unsubscribed.', 400);
+
         const MAX = 10000;
         if (recipients.length > MAX) {
             throw new AppError(`Too many recipients (${recipients.length}). Maximum is ${MAX} per send.`, 400);
         }
 
-        // Wrap the admin's body in the branded base layout so custom mails match the brand.
+        // Compile the branded layout once; each recipient gets their own unsubscribe link.
         const layout = Handlebars.compile(BASE_LAYOUT);
-        const html = layout({ subject: opts.subject, body: opts.html, unsubscribeUrl: UNSUBSCRIBE_URL });
 
         // Record the broadcast intent up-front.
         await prisma.auditLog
@@ -242,6 +252,7 @@ export class EmailAdminService {
                         mode: opts.mode,
                         subject: opts.subject,
                         recipients: recipients.length,
+                        skippedUnsubscribed: unsubSet.size,
                         timestamp: new Date().toISOString(),
                     },
                 },
@@ -254,6 +265,11 @@ export class EmailAdminService {
             let failed = 0;
             for (const to of recipients) {
                 try {
+                    const html = layout({
+                        subject: opts.subject,
+                        body: opts.html,
+                        unsubscribeUrl: buildUnsubscribeUrl(to),
+                    });
                     await EmailService.send({ to, subject: opts.subject, html });
                     sent++;
                 } catch (err) {
@@ -265,6 +281,25 @@ export class EmailAdminService {
         });
 
         return { queued: recipients.length };
+    }
+
+    /** People who have unsubscribed from emails. */
+    async listUnsubscribes(page = '1', limit = '50', search?: string) {
+        const { skip, page: p, limit: l } = getPagination(page, limit);
+        const where: Prisma.EmailUnsubscribeWhereInput = search
+            ? { email: { contains: search, mode: 'insensitive' } }
+            : {};
+        const [rows, total] = await Promise.all([
+            prisma.emailUnsubscribe.findMany({ where, skip, take: l, orderBy: { createdAt: 'desc' } }),
+            prisma.emailUnsubscribe.count({ where }),
+        ]);
+        return buildPaginatedResult(rows, total, p, l);
+    }
+
+    /** Admin re-subscribes an address (removes it from the unsubscribe list). */
+    async resubscribe(email: string) {
+        await removeUnsubscribe(email);
+        return { success: true, email };
     }
 
     /** Email-related audit rows (dispatched / skipped / custom / template failures). */

@@ -66,6 +66,16 @@ export class EmailAdminController {
         const { page, limit } = request.query as { page?: string; limit?: string };
         sendSuccess(reply, await emailAdminService.getLogs(page, limit));
     };
+
+    listUnsubscribes = async (request: AuthRequest, reply: FastifyReply) => {
+        const { page, limit, search } = request.query as { page?: string; limit?: string; search?: string };
+        sendSuccess(reply, await emailAdminService.listUnsubscribes(page, limit, search));
+    };
+
+    resubscribe = async (request: AuthRequest, reply: FastifyReply) => {
+        const { email } = request.body as { email: string };
+        sendSuccess(reply, await emailAdminService.resubscribe(email), 'Resubscribed');
+    };
 }
 
 export const emailAdminController = new EmailAdminController();

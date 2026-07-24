@@ -3,7 +3,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import cookie from '@fastify/cookie';
 // @fastify/compress removed — gzip handled by Nginx (avoids premature close stream conflict)
-// import rateLimit from '@fastify/rate-limit';
+import rateLimit from '@fastify/rate-limit';
 import formbody from '@fastify/formbody';
 import multipart from '@fastify/multipart';
 import { config } from './config/config';
@@ -50,23 +50,28 @@ const allowedOrigins = [
     'http://localhost:5173',
 ].filter(Boolean);
 
+// Because auth cookies are SameSite=None + credentialed, an over-broad CORS allow-list
+// would let any matching origin drive authenticated requests as a logged-in victim.
+// So the wildcard preview/localhost origins are permitted ONLY outside production; in
+// production only the explicit, owned origins (config.clientUrl + the lenienttree domains)
+// are allowed.
+const isProdEnv = config.env === 'production';
 app.register(cors, {
     origin: (origin, callback) => {
         if (!origin) {
+            // Non-browser clients (curl, server-to-server, health checks) send no Origin.
             callback(null, true);
             return;
         }
 
-        const isAllowed = allowedOrigins.includes(origin) || 
-            /^https:\/\/[a-zA-Z0-9-._]+\.vercel\.app$/.test(origin) ||
-            /^http:\/\/localhost(:\d+)?$/.test(origin) ||
-            /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
+        const isAllowed =
+            allowedOrigins.includes(origin) ||
+            (!isProdEnv &&
+                (/^https:\/\/[a-zA-Z0-9-._]+\.vercel\.app$/.test(origin) ||
+                    /^http:\/\/localhost(:\d+)?$/.test(origin) ||
+                    /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)));
 
-        if (isAllowed) {
-            callback(null, true);
-        } else {
-            callback(null, false);
-        }
+        callback(null, isAllowed);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -86,17 +91,19 @@ app.register(multipart, {
 
 // Compression is handled by Nginx (gzip_proxied, gzip_types) — not at the Node.js layer
 
-// Rate Limiting
-// WARNING: default in-memory store is per-process — in PM2 cluster mode each worker
-// tracks limits independently, making the effective limit (max × workers).
-// To enforce a true global limit, add Redis: npm i @fastify/redis ioredis
-// and pass `redis: redisClient` here. Acceptable trade-off on free-tier infra.
-/*
+// Rate Limiting.
+// Registered as opt-in (`global: false`) so normal SPA browsing (which fires many
+// requests per page) is never throttled — only routes that declare `config.rateLimit`
+// (auth, contact, password reset, …) are limited. This protects brute-force / abuse
+// targets without risking the interactive UX.
+// WARNING: the default in-memory store is per-process — in PM2 cluster mode each worker
+// tracks limits independently (effective limit ≈ max × workers). For a true global limit
+// add Redis: npm i @fastify/rate-limit ioredis and pass a `redis` client here.
 app.register(rateLimit, {
+    global: false,
     max: config.rateLimit.max,
     timeWindow: config.rateLimit.windowMs,
 });
-*/
 
 // ── Root Health Check ─────────────────────────────────────────────────────────
 const serverStartTime = Date.now();

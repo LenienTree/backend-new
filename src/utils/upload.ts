@@ -12,12 +12,24 @@ export interface UploadResult {
     key: string;
 }
 
+// Only raster images and PDFs are ever uploaded here. We reject everything else —
+// especially image/svg+xml and text/html, which can carry active script and would
+// otherwise be stored and served as an attacker-controlled payload.
+const isAllowedContentType = (ct: string): boolean => {
+    const t = (ct || '').toLowerCase().split(';')[0].trim();
+    if (t === 'image/svg+xml') return false;
+    return t.startsWith('image/') || t === 'application/pdf';
+};
+
 export const uploadToS3 = async (
     fileBuffer: Buffer,
     folder: UploadFolder,
     fileName?: string,
     contentType: string = 'image/jpeg'
 ): Promise<UploadResult> => {
+    if (!isAllowedContentType(contentType)) {
+        throw new AppError('Unsupported file type. Only images and PDFs are allowed.', 400);
+    }
     try {
         const key = fileName
             ? `lenienttree/${folder}/${fileName}`

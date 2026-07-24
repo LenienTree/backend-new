@@ -10,6 +10,7 @@ import referralRoutes from './referral.routes';
 import homepageRoutes from './homepage.routes';
 import notificationRoutes from './notification.routes';
 import contactRoutes from './contact.routes';
+import emailRoutes from './email.routes';
 
 export default async function routes(fastify: FastifyInstance) {
     fastify.register(authRoutes, { prefix: '/auth' });
@@ -23,4 +24,5 @@ export default async function routes(fastify: FastifyInstance) {
     fastify.register(homepageRoutes, { prefix: '/homepage' });
     fastify.register(notificationRoutes, { prefix: '/notifications' });
     fastify.register(contactRoutes, { prefix: '/contact' });
+    fastify.register(emailRoutes, { prefix: '/email' });
 }

@@ -6,6 +6,7 @@ import { retryWithBackoff } from '../utils/retry';
 import { EmailOptions, TemplateContexts } from '../types';
 import { emailConfig } from '../config';
 import { CRITICAL_TEMPLATES } from '../registry';
+import { isUnsubscribed, buildUnsubscribeUrl } from '../unsubscribe';
 import { prisma } from '../../../config/database';
 
 // In-memory dedup cache — guards against duplicate sends within a single worker process.
@@ -121,6 +122,13 @@ export class EmailService {
                 return;
             }
 
+            // Honour unsubscribes for a single recipient — never for critical mail.
+            const singleTo = typeof to === 'string' ? to : null;
+            if (singleTo && !CRITICAL_TEMPLATES.has(name) && (await isUnsubscribed(singleTo))) {
+                console.log(`[Email] ${singleTo} has unsubscribed. Skipping "${name}".`);
+                return;
+            }
+
             // Subject override rendered with the same context; fall back to the caller's
             // subject on any compile error.
             let finalSubject = subject;
@@ -132,11 +140,15 @@ export class EmailService {
                 }
             }
 
+            // Per-recipient unsubscribe link (falls back to the template default for
+            // multi-recipient sends where there is no single address).
+            const unsubscribeUrl = singleTo ? buildUnsubscribeUrl(singleTo) : undefined;
+
             const html = renderTemplate(
                 name,
                 context,
                 finalSubject,
-                undefined,
+                unsubscribeUrl,
                 override?.bodyHtml ?? undefined
             );
             await this.send({

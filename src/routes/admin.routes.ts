@@ -145,5 +145,14 @@ export default async function adminRoutes(fastify: FastifyInstance) {
 
     // GET /api/admin/email/logs
     fastify.get('/email/logs', emailAdminController.getLogs);
+
+    // GET /api/admin/email/unsubscribes?page=&limit=&search=
+    fastify.get('/email/unsubscribes', emailAdminController.listUnsubscribes);
+
+    // POST /api/admin/email/resubscribe  { email }
+    fastify.post('/email/resubscribe', {
+        preHandler: auditLog('EMAIL_RESUBSCRIBE', 'Email'),
+        handler: emailAdminController.resubscribe,
+    });
 }
 
