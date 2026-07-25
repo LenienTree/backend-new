@@ -72,6 +72,17 @@ export class AdminController {
         sendSuccess(reply, result);
     };
 
+    getLeadAnalytics = async (_request: AuthRequest, reply: FastifyReply) => {
+        const result = await adminService.getLeadAnalytics();
+        sendSuccess(reply, result);
+    };
+
+    getInternshipLeads = async (request: AuthRequest, reply: FastifyReply) => {
+        const { domain, college } = request.query as { domain?: string; college?: string };
+        const result = await adminService.getInternshipLeads(domain, college);
+        sendSuccess(reply, result);
+    };
+
     getOrganizerRequests = async (request: AuthRequest, reply: FastifyReply) => {
         const requests = await adminService.getOrganizerRequests();
         sendSuccess(reply, requests);

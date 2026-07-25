@@ -90,6 +90,12 @@ export default async function adminRoutes(fastify: FastifyInstance) {
     // GET /api/admin/analytics
     fastify.get('/analytics', adminController.getAnalytics);
 
+    // GET /api/admin/lead-analytics
+    fastify.get('/lead-analytics', adminController.getLeadAnalytics);
+
+    // GET /api/admin/leads/internship?domain=&college=
+    fastify.get('/leads/internship', adminController.getInternshipLeads);
+
     // GET /api/admin/events  (all events, any status)
     fastify.get('/events', adminController.getAllEvents);
 
