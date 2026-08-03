@@ -47,6 +47,8 @@ export class AuthService {
                 graduationYear: data.graduationYear,
                 currentRole: data.currentRole,
                 passwordHash,
+                // Email verification is disabled for now — accounts are trusted on signup.
+                isEmailVerified: true,
                 interests: data.interests ?? [],
                 dateOfBirth: new Date(data.dateOfBirth),
                 socialLinks: { create: {} },
@@ -73,10 +75,7 @@ export class AuthService {
             },
         });
 
-        // Send verification email (non-blocking)
-        this.sendVerificationEmail(user.id, user.email, user.name).catch(
-            console.error
-        );
+        // Verification email disabled — see sendVerificationEmail() below.
 
         // Emit USER_REGISTERED (welcome email)
         emailEmitter.emitAsync(EmailEvent.USER_REGISTERED, {
@@ -374,6 +373,8 @@ export class AuthService {
         });
     }
 
+    // Currently unused: email verification is disabled at signup. Kept so the flow
+    // can be re-enabled by calling this from register() again.
     private async sendVerificationEmail(
         userId: string,
         email: string,

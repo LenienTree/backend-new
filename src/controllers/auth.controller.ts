@@ -29,7 +29,7 @@ export class AuthController {
     register = async (request: FastifyRequest, reply: FastifyReply) => {
         const result = await authService.register(request.body as any);
         setAuthCookies(reply, result.accessToken, result.refreshToken);
-        sendCreated(reply, result, 'Registration successful! Please verify your email.');
+        sendCreated(reply, result, 'Registration successful!');
     };
 
     login = async (request: FastifyRequest, reply: FastifyReply) => {
