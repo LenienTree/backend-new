@@ -117,8 +117,10 @@ export class EmailService {
             // Respect an admin "pause" — but never for critical transactional emails
             // (verification, password reset, etc.), which must always be delivered.
             if (override && override.enabled === false && !CRITICAL_TEMPLATES.has(name)) {
+                // Deliberately not audit-logged. The bulk schedulers fan out to
+                // hundreds of recipients per run, and one auditLog.create() per skip
+                // exhausted the Prisma connection pool (P2024) for mail never sent.
                 console.log(`[Email] Template "${name}" is disabled by admin. Skipping send.`);
-                this.logTemplateSkipped(name, to).catch(() => {});
                 return;
             }
 
@@ -162,25 +164,6 @@ export class EmailService {
             // Log a system failure in case of template issues
             this.logSystemFailure(templateName, error).catch(console.error);
             throw error;
-        }
-    }
-
-    /** Records that an automated email was skipped because an admin disabled it. */
-    private static async logTemplateSkipped(templateName: string, to: string | string[]): Promise<void> {
-        try {
-            await prisma.auditLog.create({
-                data: {
-                    action: 'EMAIL_SKIPPED_DISABLED',
-                    entity: 'Email',
-                    newValue: {
-                        template: templateName,
-                        to: Array.isArray(to) ? to.join(', ') : to,
-                        timestamp: new Date().toISOString(),
-                    },
-                },
-            });
-        } catch (error) {
-            console.error('[Email] Failed logging skipped email to AuditLog:', error);
         }
     }
 

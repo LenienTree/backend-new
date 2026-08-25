@@ -150,8 +150,18 @@ export class AuthService {
             },
         });
 
-        if (!user || !user.passwordHash) {
+        if (!user) {
             throw new AppError('Invalid email or password.', 401);
+        }
+
+        // Google-created accounts have no passwordHash. Returning the generic
+        // message here is indistinguishable from a wrong password, so these users
+        // retry forever instead of using the Google button or a password reset.
+        if (!user.passwordHash) {
+            throw new AppError(
+                'This account uses Google sign-in. Continue with Google, or use "Forgot password" to set a password.',
+                400
+            );
         }
 
         if (user.status === 'BLOCKED') {
@@ -195,6 +205,11 @@ export class AuthService {
                     name,
                     profileImage,
                     isEmailVerified: true,
+                    // `interests` and `internshipDomains` are non-null String[] with no
+                    // schema default, so omitting them sends NULL and Postgres rejects
+                    // the insert. register() already passes them; this path must too.
+                    interests: [],
+                    internshipDomains: [],
                     socialLinks: { create: {} },
                 },
             });
