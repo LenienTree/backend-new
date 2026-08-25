@@ -152,7 +152,8 @@ export class RegistrationService {
         page = '1',
         limit = '10',
         status?: string,
-        search?: string
+        search?: string,
+        all = false
     ) {
         const event = await prisma.event.findUnique({ where: { id: eventId } });
         if (!event) throw new AppError('Event not found.', 404);
@@ -194,8 +195,8 @@ export class RegistrationService {
                         },
                     },
                 },
-                skip,
-                take: l,
+                // `all` powers the attendee export: no pagination window, every matching row.
+                ...(all ? {} : { skip, take: l }),
                 orderBy: { registeredAt: 'desc' },
             }),
             prisma.registration.count({ where }),
@@ -214,7 +215,10 @@ export class RegistrationService {
         }, {});
         counts.ALL = Object.values(counts).reduce((sum, n) => sum + n, 0);
 
-        return { ...buildPaginatedResult(registrations, total, p, l), counts };
+        return {
+            ...buildPaginatedResult(registrations, total, all ? 1 : p, all ? total || 1 : l),
+            counts,
+        };
     }
 
     async approveRegistration(registrationId: string, requesterId: string, requesterRole: string) {

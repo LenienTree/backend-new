@@ -72,11 +72,12 @@ export class RegistrationController {
     };
 
     getParticipants = async (request: AuthRequest, reply: FastifyReply) => {
-        const { page, limit, status, search } = request.query as {
+        const { page, limit, status, search, all } = request.query as {
             page?: string;
             limit?: string;
             status?: string;
             search?: string;
+            all?: string;
         };
         const result = await registrationService.getParticipants(
             (request.params as any).id as string,
@@ -85,7 +86,8 @@ export class RegistrationController {
             page,
             limit,
             status,
-            search
+            search,
+            all === 'true'
         );
         sendSuccess(reply, result);
     };
