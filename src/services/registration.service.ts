@@ -7,6 +7,36 @@ import { config } from '../config/config';
 import crypto from 'crypto';
 
 export class RegistrationService {
+    private async ensureCanViewParticipants(eventId: string, requesterId: string, requesterRole: string) {
+        const event = await prisma.event.findUnique({ where: { id: eventId } });
+        if (!event) throw new AppError('Event not found.', 404);
+
+        if (requesterRole !== 'ADMIN' && event.organizerId !== requesterId) {
+            throw new AppError('Not authorized to view participants.', 403);
+        }
+
+        return event;
+    }
+
+    private buildParticipantWhere(eventId: string, status?: string, search?: string): Prisma.RegistrationWhereInput {
+        const where: Prisma.RegistrationWhereInput = { eventId };
+        if (status) where.status = status as Prisma.RegistrationWhereInput['status'];
+        if (search) {
+            const s = search.trim();
+            where.user = {
+                is: {
+                    OR: [
+                        { name: { contains: s, mode: 'insensitive' } },
+                        { email: { contains: s, mode: 'insensitive' } },
+                        { phone: { contains: s, mode: 'insensitive' } },
+                        { college: { contains: s, mode: 'insensitive' } },
+                    ],
+                },
+            };
+        }
+        return where;
+    }
+
     async register(
         eventId: string, 
         userId: string, 
@@ -155,30 +185,11 @@ export class RegistrationService {
         search?: string,
         all = false
     ) {
-        const event = await prisma.event.findUnique({ where: { id: eventId } });
-        if (!event) throw new AppError('Event not found.', 404);
-
-        if (requesterRole !== 'ADMIN' && event.organizerId !== requesterId) {
-            throw new AppError('Not authorized to view participants.', 403);
-        }
+        await this.ensureCanViewParticipants(eventId, requesterId, requesterRole);
 
         const { skip, page: p, limit: l } = getPagination(page, limit);
 
-        const where: Prisma.RegistrationWhereInput = { eventId };
-        if (status) where.status = status as Prisma.RegistrationWhereInput['status'];
-        if (search) {
-            const s = search.trim();
-            where.user = {
-                is: {
-                    OR: [
-                        { name: { contains: s, mode: 'insensitive' } },
-                        { email: { contains: s, mode: 'insensitive' } },
-                        { phone: { contains: s, mode: 'insensitive' } },
-                        { college: { contains: s, mode: 'insensitive' } },
-                    ],
-                },
-            };
-        }
+        const where = this.buildParticipantWhere(eventId, status, search);
 
         const [registrations, total, statusGroups] = await Promise.all([
             prisma.registration.findMany({
@@ -219,6 +230,37 @@ export class RegistrationService {
             ...buildPaginatedResult(registrations, total, all ? 1 : p, all ? total || 1 : l),
             counts,
         };
+    }
+
+    async exportParticipants(
+        eventId: string,
+        requesterId: string,
+        requesterRole: string,
+        status?: string,
+        search?: string
+    ) {
+        await this.ensureCanViewParticipants(eventId, requesterId, requesterRole);
+
+        const where = this.buildParticipantWhere(eventId, status, search);
+
+        const registrations = await prisma.registration.findMany({
+            where,
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true,
+                        profileImage: true,
+                        college: true,
+                    },
+                },
+            },
+            orderBy: { registeredAt: 'desc' },
+        });
+
+        return { data: registrations };
     }
 
     async approveRegistration(registrationId: string, requesterId: string, requesterRole: string) {

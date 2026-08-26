@@ -66,6 +66,12 @@ export default async function eventRoutes(fastify: FastifyInstance) {
         handler: registrationController.getParticipants
     });
 
+    // GET /api/events/:id/participants/export  (organizer/admin)
+    fastify.get('/:id/participants/export', {
+        preHandler: authenticate,
+        handler: registrationController.exportParticipants
+    });
+
     // POST /api/events/:id/create-razorpay-order
     fastify.post('/:id/create-razorpay-order', {
         preHandler: authenticate,

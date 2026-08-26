@@ -92,6 +92,21 @@ export class RegistrationController {
         sendSuccess(reply, result);
     };
 
+    exportParticipants = async (request: AuthRequest, reply: FastifyReply) => {
+        const { status, search } = request.query as {
+            status?: string;
+            search?: string;
+        };
+        const result = await registrationService.exportParticipants(
+            (request.params as any).id as string,
+            request.user!.userId,
+            request.user!.role,
+            status,
+            search
+        );
+        sendSuccess(reply, result);
+    };
+
     approveRegistration = async (request: AuthRequest, reply: FastifyReply) => {
         const result = await registrationService.approveRegistration(
             (request.params as any).registrationId as string,
