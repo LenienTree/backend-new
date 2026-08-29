@@ -55,6 +55,26 @@ export const errorHandler = (
                     message: 'Related record not found.',
                 });
                 return;
+            // Connection pool exhausted / DB unreachable. This is a capacity
+            // problem, not a client mistake — 503 tells callers (and uptime
+            // monitors) to retry rather than reporting a bug.
+            case 'P2024':
+                reply.status(503).send({
+                    success: false,
+                    message: 'The service is busy right now. Please try again in a moment.',
+                });
+                return;
+            // Missing required column. Always a server-side bug (a create() that
+            // omitted a non-null field), so surface it as 500 but distinctly, so
+            // it is greppable in the logs instead of hiding among generic errors.
+            case 'P2011':
+            case 'P2012':
+                request.log.error({ meta: err.meta }, 'Null/missing required field on write');
+                reply.status(500).send({
+                    success: false,
+                    message: 'Something went wrong saving your data. Please try again.',
+                });
+                return;
             default:
                 break;
         }

@@ -356,6 +356,10 @@ export class ReferralService {
                     role: 'USER',
                     status: 'ACTIVE',
                     isEmailVerified: true,
+                    // Non-null String[] with no schema default — omitting these sends
+                    // NULL and Postgres rejects the insert (same bug as googleAuth had).
+                    interests: [],
+                    internshipDomains: [],
                 },
             });
             return user;
